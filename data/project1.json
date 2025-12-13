@@ -1,0 +1,69 @@
+{
+  "projectTitle": "Project1",
+  "version": "v1.4.2",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "System Overview",
+          "content": [
+            { "type": "header", "text": "FluxStream Architecture" },
+            { "type": "text", "text": "FluxStream is a high-throughput event processing system designed for real-time analytics. It leverages a **microservices** approach, utilizing Apache Kafka for message brokering and Kubernetes for orchestration." },
+            { "type": "image", "src": "images/project1/38bdf8.svg", "alt": "High Level Architecture", "caption": "Figure 1: High-level data flow from Ingestion to Analytics." },
+            { "type": "alert", "variant": "info", "title": "Scale", "text": "This architecture is currently processing over **50,000 events per second** in production environments." }
+          ]
+        },
+        {
+          "id": "core-components",
+          "title": "Core Components",
+          "content": [
+            { "type": "header", "text": "Core Services" },
+            { "type": "text", "text": "The system consists of three primary services:" },
+            { "type": "list", "items": [
+                "**Ingestor Service**: A Go-based high-performance HTTP gateway.",
+                "**Processor Service**: A Python/Pandas worker for data normalization.",
+                "**Storage Service**: Manages writes to TimescaleDB and S3."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Deep Dive",
+      "items": [
+        {
+          "id": "ingestion",
+          "title": "Ingestion Layer",
+          "content": [
+            { "type": "header", "text": "Ingestion Service" },
+            { "type": "text", "text": "The `ingestor` is the entry point. It accepts JSON payloads, validates schemas, and pushes raw data to the `raw-events` Kafka topic." },
+            { "type": "code", "language": "go", "code": "func (s *Server) HandleIngest(w http.ResponseWriter, r *http.Request) {\n    // Validate payload\n    if err := s.validator.Validate(r.Body); err != nil {\n        http.Error(w, \"Invalid Schema\", 400)\n        return\n    }\n    // Push to Kafka\n    s.kafkaProducer.Produce(\"raw-events\", r.Body)\n}" },
+            { "type": "alert", "variant": "tip", "title": "Performance", "text": "We use `Goroutines` to handle non-blocking Kafka writes, achieving sub-10ms response times." }
+          ]
+        },
+        {
+          "id": "data-flow",
+          "title": "Data Flow Diagram",
+          "content": [
+            { "type": "header", "text": "Event Lifecycle" },
+            { "type": "text", "text": "Below is the detailed lifecycle of a single event as it moves through the pipeline. **Click the image to zoom in** and inspect the topic partitions." },
+            { "type": "image", "src": "images/project1/4ade80.svg", "alt": "Sequence Diagram", "caption": "Figure 2: Sequence diagram of Event ID #49201." }
+          ]
+        },
+        {
+          "id": "deployment",
+          "title": "Deployment",
+          "content": [
+            { "type": "header", "text": "Kubernetes Deployment" },
+            { "type": "text", "text": "We use Helm charts for deployment. Ensure you have the `values.yaml` configured for your environment." },
+            { "type": "code", "language": "yaml", "code": "# values.yaml\nreplicaCount: 3\nimage:\n  repository: fluxstream/ingestor\n  tag: \"1.4.2\"\nresources:\n  limits:\n    cpu: 500m\n    memory: 512Mi" },
+            { "type": "video", "videoId": "dQw4w9WgXcQ", "title": "Deployment Walkthrough" }
+          ]
+        }
+      ]
+    }
+  ]
+}

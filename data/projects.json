@@ -1,0 +1,54 @@
+{
+  "featured": [
+    {
+      "id": "orbit",
+      "title": "Orbit",
+      "description": "Distributed container orchestrator in Go.",
+      "category": "Cloud",
+      "thumbnail": "https://placehold.co/500x500/1e293b/60a5fa?text=Orbit",
+      "links": { "docs": "#/orbit", "github": "https://github.com", "live": null }
+    },
+    {
+      "id": "syncdocs",
+      "title": "SyncDocs",
+      "description": "Real-time collaborative editor.",
+      "category": "Dev",
+      "thumbnail": "https://placehold.co/500x500/0f172a/38bdf8?text=SyncDocs",
+      "links": { "docs": "#/syncdocs", "github": "https://github.com", "live": "https://example.com" }
+    },
+    {
+      "id": "unetify",
+      "title": "Unetify",
+      "description": "Autonomous AI Agent Protocol.",
+      "category": "AI",
+      "thumbnail": "https://placehold.co/500x500/312e81/a78bfa?text=Unetify",
+      "links": { "docs": "#/unetify", "github": "https://github.com", "live": null }
+    }
+  ],
+  "hackathon": [
+    {
+      "id": "hack1",
+      "title": "EcoTrack",
+      "description": "Carbon footprint tracker using IoT.",
+      "category": "IoT",
+      "thumbnail": "https://placehold.co/500x500/064e3b/34d399?text=EcoTrack",
+      "links": { "docs": "#/showcase", "github": "https://github.com", "live": null }
+    },
+    {
+      "id": "hack2",
+      "title": "MediChain",
+      "description": "Blockchain health records.",
+      "category": "Web3",
+      "thumbnail": "https://placehold.co/500x500/701a75/f472b6?text=MediChain",
+      "links": { "docs": "#/showcase", "github": "https://github.com", "live": null }
+    },
+    {
+      "id": "hack3",
+      "title": "VisionZero",
+      "description": "Traffic accident prediction AI.",
+      "category": "ML",
+      "thumbnail": "https://placehold.co/500x500/7f1d1d/f87171?text=VisionZero",
+      "links": { "docs": "#/showcase", "github": "https://github.com", "live": null }
+    }
+  ]
+}

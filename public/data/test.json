@@ -1,0 +1,77 @@
+{
+  "projectTitle": "Testing Documentation",
+  "version": "v2.0.0-beta",
+  "sections": [
+    {
+      "category": "Basic Elements",
+      "items": [
+        {
+          "id": "typography",
+          "title": "Typography & Formatting",
+          "content": [
+            { "type": "header", "text": "Typography System" },
+            { "type": "text", "text": "This is a standard paragraph. It supports **bold text** for emphasis and `inline code` for technical terms like variables or file paths." },
+            { "type": "text", "text": "This is a standard paragraph. It supports **bold text** for emphasis and `inline code` for technical terms like variables or file paths." },
+
+            { "type": "header2", "text": "Secondary Heading" },
+            { "type": "text", "text": "Secondary headings are used to break down sections into smaller, readable chunks." },
+            { "type": "alert", "variant": "info", "title": "Note", "text": "You can combine **bold** and `code` inside alerts too." }
+          ]
+        },
+        {
+          "id": "lists",
+          "title": "Lists",
+          "content": [
+            { "type": "header", "text": "List Styles" },
+            { "type": "text", "text": "Lists are perfect for feature sets or prerequisites:" },
+            { "type": "list", "items": [
+                "Server-side Rendering (SSR) support",
+                "Fully responsive **mobile layout**",
+                "Dark mode enabled by default",
+                "Zero-config routing system"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Rich Media",
+      "items": [
+        {
+          "id": "code-blocks",
+          "title": "Code Blocks",
+          "content": [
+            { "type": "header", "text": "Syntax Highlighting" },
+            { "type": "text", "text": "We support multiple languages. Here is a Javascript example:" },
+            { "type": "code", "language": "javascript", "code": "// Initialize the engine\nconst engine = new DocsEngine({\n  theme: 'dark',\n  plugins: ['search', 'analytics']\n});\n\nengine.start();" },
+            { "type": "text", "text": "And here is a Python example:" },
+            { "type": "code", "language": "python", "code": "# Data Processing Script\ndef process_data(data):\n    return [d for d in data if d['active'] is True]" }
+          ]
+        },
+        {
+          "id": "images-video",
+          "title": "Images & Video",
+          "content": [
+            { "type": "header", "text": "Visual Media" },
+            { "type": "text", "text": "Images support captions and **zoom-on-click** functionality." },
+            { "type": "image", "src": "https://placehold.co/800x400/1e293b/60a5fa?text=Feature+Preview+Banner", "alt": "Feature Banner", "caption": "Figure 1: Main dashboard overview." },
+            { "type": "header2", "text": "Video Embedding" },
+            { "type": "text", "text": "Embed YouTube videos by ID:" },
+            { "type": "video", "videoId": "dQw4w9WgXcQ", "title": "Integration Tutorial" }
+          ]
+        },
+        {
+          "id": "alerts",
+          "title": "Alert Types",
+          "content": [
+            { "type": "header", "text": "Callouts" },
+            { "type": "alert", "variant": "info", "title": "Info", "text": "General information for the user." },
+            { "type": "alert", "variant": "tip", "title": "Tip", "text": "Helpful suggestions or best practices." },
+            { "type": "alert", "variant": "warning", "title": "Warning", "text": "Critical information, deprecations, or breaking changes." }
+          ]
+        }
+      ]
+    }
+  ]
+}

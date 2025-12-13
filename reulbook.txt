@@ -1,0 +1,150 @@
+# JOSHIDOCS ENGINE: SCHEMA & SYNTAX RULEBOOK
+# Version: 1.0
+# Purpose: Definition of valid JSON structure for the JoshiDocs React Frontend.
+
+---
+1. ROOT STRUCTURE
+---
+The API response must always return a single JSON object with the following root properties:
+
+{
+  "projectTitle": "String (Required) - Name of the documentation site",
+  "version": "String (Required) - e.g., 'v1.0.4'",
+  "sections": [Array of Section Objects]
+}
+
+---
+2. NAVIGATION STRUCTURE (SECTIONS)
+---
+The "sections" array controls the Sidebar and the page order.
+Each object in the "sections" array represents a group in the sidebar.
+
+Section Object:
+{
+  "category": "String (Required) - The group header (e.g., 'Getting Started')",
+  "items": [Array of Page Objects]
+}
+
+Page Object:
+{
+  "id": "String (Required, Unique) - URL slug and HTML ID (e.g., 'quick-start')",
+  "title": "String (Required) - Display name in Sidebar",
+  "content": [Array of Block Objects]
+}
+
+---
+3. CONTENT BLOCKS
+---
+The "content" array contains the actual UI elements. The engine renders these sequentially.
+Every block must have a "type" property.
+
+A. HEADERS
+Type: "header" (H1 - Main Section Title)
+Type: "header2" (H2 - Subsections)
+{
+  "type": "header" | "header2",
+  "text": "String - The heading text"
+}
+
+B. TEXT (PARAGRAPH)
+Type: "text"
+Supports inline formatting:
+- Bold: Wrap text in ** ** or <b> </b> (e.g., "**bold**")
+- Inline Code: Wrap text in backticks ` ` (e.g., "`variable`")
+{
+  "type": "text",
+  "text": "String - The paragraph content."
+}
+
+C. CODE BLOCKS
+Type: "code"
+{
+  "type": "code",
+  "language": "String - (e.g., 'javascript', 'python', 'bash', 'go')",
+  "code": "String - The raw code string. Use \n for newlines."
+}
+
+D. LISTS
+Type: "list"
+Renders a bulleted list. Supports inline formatting in items.
+{
+  "type": "list",
+  "items": [
+    "String - Item 1",
+    "String - Item 2 (**bold supported**)"
+  ]
+}
+
+E. ALERTS / CALLOUTS
+Type: "alert"
+Variants: "info" (Blue), "tip" (Green), "warning" (Amber)
+{
+  "type": "alert",
+  "variant": "info" | "tip" | "warning",
+  "title": "String - Alert Header",
+  "text": "String - Alert Body"
+}
+
+F. IMAGES (ZOOMABLE)
+Type: "image"
+Renders a thumbnail that opens a pan/zoom modal on click.
+{
+  "type": "image",
+  "src": "String (URL) - Image source",
+  "alt": "String - Alt text for accessibility",
+  "caption": "String (Optional) - Text displayed below image"
+}
+
+G. VIDEO (YOUTUBE)
+Type: "video"
+Embeds a YouTube player.
+{
+  "type": "video",
+  "videoId": "String - The 11-char YouTube ID (e.g., 'dQw4w9WgXcQ')",
+  "title": "String (Optional) - Title for accessibility"
+}
+
+---
+4. INLINE FORMATTING RULES
+---
+These rules apply to "text" blocks, "list" items, and "alert" text fields.
+
+1. BOLD: Use double asterisks or HTML b tag.
+   - Input: "This is **important**."
+   - Render: "This is <strong>important</strong>."
+
+2. INLINE CODE: Use backticks.
+   - Input: "Run `npm install` now."
+   - Render: "Run <code class='...'>npm install</code> now."
+
+---
+5. VALIDATION CHECKLIST
+---
+[ ] Root object has `projectTitle`, `version`, and `sections`.
+[ ] Every `id` in `sections[].items[]` is unique across the entire JSON.
+[ ] `code` blocks use `\n` for line breaks, not literal newlines.
+[ ] `videoId` is ONLY the ID, not the full URL.
+[ ] Images have valid `src` URLs.
+
+---
+6. MINIMAL VALID EXAMPLE
+---
+{
+  "projectTitle": "Demo",
+  "version": "1.0",
+  "sections": [
+    {
+      "category": "Main",
+      "items": [
+        {
+          "id": "hello",
+          "title": "Hello World",
+          "content": [
+            { "type": "header", "text": "Welcome" },
+            { "type": "text", "text": "Hello **User**." }
+          ]
+        }
+      ]
+    }
+  ]
+}

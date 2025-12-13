@@ -1,0 +1,70 @@
+{
+  "projectTitle": "Orbit Orchestrator",
+  "version": "v0.1.0-alpha",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "orbit-intro",
+          "title": "What is Orbit?",
+          "content": [
+            { "type": "header", "text": "Orbit: Distributed Container Orchestrator" },
+            { "type": "text", "text": "Orbit is a lightweight, distributed container orchestration system built in **Go**. It manages the lifecycle of containers across a cluster of worker nodes, handling scheduling, health checks, and state management." },
+            { "type": "alert", "variant": "info", "title": "Tech Stack", "text": "Built with **Go**, **Docker SDK**, and **RESTful APIs**. Uses a manager-worker architecture." },
+            { 
+              "type": "image", 
+              "src": "/images/orbit/orbit-architecture.png", 
+              "alt": "Orbit High Level Architecture", 
+              "caption": "Figure 1: The Manager-Worker Node Architecture. Click to Zoom." 
+            }
+          ]
+        },
+        {
+          "id": "quick-start",
+          "title": "Quick Start",
+          "content": [
+            { "type": "header", "text": "Running a Cluster" },
+            { "type": "text", "text": "To start the Orbit Manager:" },
+            { "type": "code", "language": "bash", "code": "./orbit-manager --port 5555 --scheduler round-robin" },
+            { "type": "text", "text": "To join a Worker node:" },
+            { "type": "code", "language": "bash", "code": "sudo ./orbit-worker --manager localhost:5555 --name worker-1" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Internals",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Design",
+          "content": [
+            { "type": "header", "text": "Core Components" },
+            { "type": "text", "text": "Orbit follows a master-slave architecture similar to Kubernetes, but simplified for educational clarity." },
+            { "type": "header2", "text": "1. The Manager (Control Plane)" },
+            { "type": "text", "text": "The brain of the operation. It exposes an API for users to submit tasks." },
+            { "type": "list", "items": [
+                "**API Server**: Receives task requests.",
+                "**Scheduler**: Decides which node gets the task (supports Round Robin & Least Loaded).",
+                "**WorkerManager**: Tracks health of registered workers."
+              ]
+            },
+            { "type": "header2", "text": "2. The Worker (Data Plane)" },
+            { "type": "text", "text": "Workers execute the actual tasks using the Docker SDK." }
+          ]
+        },
+        {
+          "id": "scheduling",
+          "title": "Scheduling Logic",
+          "content": [
+            { "type": "header", "text": "The Scheduler" },
+            { "type": "text", "text": "Orbit supports pluggable scheduling algorithms. The default is `RoundRobin`." },
+            { "type": "code", "language": "go", "code": "func (r *RoundRobin) SelectCandidate(nodes []Node, task Task) *Node {\n    // Simple atomic counter for distribution\n    idx := atomic.AddInt32(&r.lastWorker, 1)\n    return &nodes[int(idx) % len(nodes)]\n}" },
+            { "type": "alert", "variant": "tip", "title": "Design Choice", "text": "I chose Interfaces for the Scheduler to make it easy to swap algorithms (e.g., switch to 'Least Containers' strategy) without rewriting the core logic." }
+          ]
+        }
+      ]
+    }
+  ]
+}

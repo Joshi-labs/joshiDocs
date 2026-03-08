@@ -104,6 +104,14 @@ Embeds a YouTube player.
   "title": "String (Optional) - Title for accessibility"
 }
 
+H. PDF VIEWER
+Type: "pdf"
+{
+  "type": "pdf",
+  "src": "String (URL) - Path to PDF file e.g. /pdfs/doc.pdf",
+  "title": "String (Optional) - Label shown below viewer"
+}
+
 ---
 4. INLINE FORMATTING RULES
 ---

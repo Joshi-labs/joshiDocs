@@ -5,6 +5,7 @@ import CodeBlock from "./blocks/CodeBlock";
 import Alert from "./blocks/Alert";
 import ImageBlock from "./blocks/ImageBlock";
 import VideoBlock from "./blocks/VideoBlock";
+import PdfBlock from "./blocks/PdfBlock";
 
 const ContentRenderer = ({ content, onImageClick }) => {
   if (!content) return null;
@@ -28,6 +29,8 @@ const ContentRenderer = ({ content, onImageClick }) => {
             return <VideoBlock key={index} videoId={block.videoId} title={block.title} />;
           case 'list':
             return <ul key={index} className="list-disc pl-5 space-y-2 text-slate-400 marker:text-purple-500">{block.items.map((item, i) => <li key={i}>{processText(item)}</li>)}</ul>;
+          case 'pdf':
+            return <PdfBlock key={index} src={block.src} title={block.title} />;
           default: return null;
         }
       })}

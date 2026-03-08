@@ -1,0 +1,1124 @@
+joshiDocs/
+├── .gitignore
+├── README.md
+├── eslint.config.js
+├── flux.json
+├── index.html
+├── package-lock.json
+├── package.json
+├── rulebook.txt
+├── src
+│   ├── App.css
+│   ├── App.jsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── ContentRenderer.jsx
+│   │   ├── FadeInSection.jsx
+│   │   ├── ImageModal.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── ProjectCard.jsx
+│   │   ├── Sidebar.jsx
+│   │   └── blocks
+│   │       ├── Alert.jsx
+│   │       ├── CodeBlock.jsx
+│   │       ├── ImageBlock.jsx
+│   │       └── VideoBlock.jsx
+│   ├── index.css
+│   ├── main.jsx
+│   ├── pages
+│   │   ├── DocsViewer.jsx
+│   │   └── Home.jsx
+│   └── utils
+│       └── textProcessor.jsx
+├── tree.py
+└── vite.config.js
+
+
+
+========================================
+ FILE CONTENTS 
+========================================
+
+
+--- PATH: flux.json ---
+{
+  "projectTitle": "FluxStream Architecture",
+  "version": "v1.4.2",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "System Overview",
+          "content": [
+            { "type": "header", "text": "FluxStream Architecture" },
+            { "type": "text", "text": "FluxStream is a high-throughput event processing system designed for real-time analytics. It leverages a **microservices** approach, utilizing Apache Kafka for message brokering and Kubernetes for orchestration." },
+            { "type": "image", "src": "https://placehold.co/1200x600/0f172a/38bdf8?text=High+Level+Architecture+Diagram&font=roboto", "alt": "High Level Architecture", "caption": "Figure 1: High-level data flow from Ingestion to Analytics." },
+            { "type": "alert", "variant": "info", "title": "Scale", "text": "This architecture is currently processing over **50,000 events per second** in production environments." }
+          ]
+        },
+        {
+          "id": "core-components",
+          "title": "Core Components",
+          "content": [
+            { "type": "header", "text": "Core Services" },
+            { "type": "text", "text": "The system consists of three primary services:" },
+            { "type": "list", "items": [
+                "**Ingestor Service**: A Go-based high-performance HTTP gateway.",
+                "**Processor Service**: A Python/Pandas worker for data normalization.",
+                "**Storage Service**: Manages writes to TimescaleDB and S3."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Deep Dive",
+      "items": [
+        {
+          "id": "ingestion",
+          "title": "Ingestion Layer",
+          "content": [
+            { "type": "header", "text": "Ingestion Service" },
+            { "type": "text", "text": "The `ingestor` is the entry point. It accepts JSON payloads, validates schemas, and pushes raw data to the `raw-events` Kafka topic." },
+            { "type": "code", "language": "go", "code": "func (s *Server) HandleIngest(w http.ResponseWriter, r *http.Request) {\n    // Validate payload\n    if err := s.validator.Validate(r.Body); err != nil {\n        http.Error(w, \"Invalid Schema\", 400)\n        return\n    }\n    // Push to Kafka\n    s.kafkaProducer.Produce(\"raw-events\", r.Body)\n}" },
+            { "type": "alert", "variant": "tip", "title": "Performance", "text": "We use `Goroutines` to handle non-blocking Kafka writes, achieving sub-10ms response times." }
+          ]
+        },
+        {
+          "id": "data-flow",
+          "title": "Data Flow Diagram",
+          "content": [
+            { "type": "header", "text": "Event Lifecycle" },
+            { "type": "text", "text": "Below is the detailed lifecycle of a single event as it moves through the pipeline. **Click the image to zoom in** and inspect the topic partitions." },
+            { "type": "image", "src": "https://placehold.co/1600x900/1e1e1e/4ade80?text=Detailed+Data+Flow+Sequence+(Zoom+Me)&font=roboto", "alt": "Sequence Diagram", "caption": "Figure 2: Sequence diagram of Event ID #49201." }
+          ]
+        },
+        {
+          "id": "deployment",
+          "title": "Deployment",
+          "content": [
+            { "type": "header", "text": "Kubernetes Deployment" },
+            { "type": "text", "text": "We use Helm charts for deployment. Ensure you have the `values.yaml` configured for your environment." },
+            { "type": "code", "language": "yaml", "code": "# values.yaml\nreplicaCount: 3\nimage:\n  repository: fluxstream/ingestor\n  tag: \"1.4.2\"\nresources:\n  limits:\n    cpu: 500m\n    memory: 512Mi" },
+            { "type": "video", "videoId": "dQw4w9WgXcQ", "title": "Deployment Walkthrough" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
+
+
+--- PATH: index.html ---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JoshiDocs</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+
+--- PATH: rulebook.txt ---
+# JOSHIDOCS ENGINE: SCHEMA & SYNTAX RULEBOOK
+# Version: 1.0
+# Purpose: Definition of valid JSON structure for the JoshiDocs React Frontend.
+
+---
+1. ROOT STRUCTURE
+---
+The API response must always return a single JSON object with the following root properties:
+
+{
+  "projectTitle": "String (Required) - Name of the documentation site",
+  "version": "String (Required) - e.g., 'v1.0.4'",
+  "sections": [Array of Section Objects]
+}
+
+---
+2. NAVIGATION STRUCTURE (SECTIONS)
+---
+The "sections" array controls the Sidebar and the page order.
+Each object in the "sections" array represents a group in the sidebar.
+
+Section Object:
+{
+  "category": "String (Required) - The group header (e.g., 'Getting Started')",
+  "items": [Array of Page Objects]
+}
+
+Page Object:
+{
+  "id": "String (Required, Unique) - URL slug and HTML ID (e.g., 'quick-start')",
+  "title": "String (Required) - Display name in Sidebar",
+  "content": [Array of Block Objects]
+}
+
+---
+3. CONTENT BLOCKS
+---
+The "content" array contains the actual UI elements. The engine renders these sequentially.
+Every block must have a "type" property.
+
+A. HEADERS
+Type: "header" (H1 - Main Section Title)
+Type: "header2" (H2 - Subsections)
+{
+  "type": "header" | "header2",
+  "text": "String - The heading text"
+}
+
+B. TEXT (PARAGRAPH)
+Type: "text"
+Supports inline formatting:
+- Bold: Wrap text in ** ** or <b> </b> (e.g., "**bold**")
+- Inline Code: Wrap text in backticks ` ` (e.g., "`variable`")
+{
+  "type": "text",
+  "text": "String - The paragraph content."
+}
+
+C. CODE BLOCKS
+Type: "code"
+{
+  "type": "code",
+  "language": "String - (e.g., 'javascript', 'python', 'bash', 'go')",
+  "code": "String - The raw code string. Use \n for newlines."
+}
+
+D. LISTS
+Type: "list"
+Renders a bulleted list. Supports inline formatting in items.
+{
+  "type": "list",
+  "items": [
+    "String - Item 1",
+    "String - Item 2 (**bold supported**)"
+  ]
+}
+
+E. ALERTS / CALLOUTS
+Type: "alert"
+Variants: "info" (Blue), "tip" (Green), "warning" (Amber)
+{
+  "type": "alert",
+  "variant": "info" | "tip" | "warning",
+  "title": "String - Alert Header",
+  "text": "String - Alert Body"
+}
+
+F. IMAGES (ZOOMABLE)
+Type: "image"
+Renders a thumbnail that opens a pan/zoom modal on click.
+{
+  "type": "image",
+  "src": "String (URL) - Image source",
+  "alt": "String - Alt text for accessibility",
+  "caption": "String (Optional) - Text displayed below image"
+}
+
+G. VIDEO (YOUTUBE)
+Type: "video"
+Embeds a YouTube player.
+{
+  "type": "video",
+  "videoId": "String - The 11-char YouTube ID (e.g., 'dQw4w9WgXcQ')",
+  "title": "String (Optional) - Title for accessibility"
+}
+
+---
+4. INLINE FORMATTING RULES
+---
+These rules apply to "text" blocks, "list" items, and "alert" text fields.
+
+1. BOLD: Use double asterisks or HTML b tag.
+   - Input: "This is **important**."
+   - Render: "This is <strong>important</strong>."
+
+2. INLINE CODE: Use backticks.
+   - Input: "Run `npm install` now."
+   - Render: "Run <code class='...'>npm install</code> now."
+
+---
+5. VALIDATION CHECKLIST
+---
+[ ] Root object has `projectTitle`, `version`, and `sections`.
+[ ] Every `id` in `sections[].items[]` is unique across the entire JSON.
+[ ] `code` blocks use `\n` for line breaks, not literal newlines.
+[ ] `videoId` is ONLY the ID, not the full URL.
+[ ] Images have valid `src` URLs.
+
+---
+6. MINIMAL VALID EXAMPLE
+---
+{
+  "projectTitle": "Demo",
+  "version": "1.0",
+  "sections": [
+    {
+      "category": "Main",
+      "items": [
+        {
+          "id": "hello",
+          "title": "Hello World",
+          "content": [
+            { "type": "header", "text": "Welcome" },
+            { "type": "text", "text": "Hello **User**." }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+
+
+
+--- PATH: src/App.css ---
+
+
+
+
+
+--- PATH: src/App.jsx ---
+import React, { useState, useEffect } from 'react';
+import Home from './pages/Home';
+import DocsViewer from './pages/DocsViewer';
+import ImageModal from './components/ImageModal';
+import Navbar from './components/Navbar'; // We might need a generic navbar for Home page too eventually
+
+function App() {
+  const [currentHash, setCurrentHash] = useState(window.location.hash);
+  const [modalImage, setModalImage] = useState(null);
+
+  // Router Logic
+  useEffect(() => {
+    const handleHashChange = () => setCurrentHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Determine Page
+  // If hash is empty, #, or #/, we are Home. Otherwise, we are viewing a doc.
+  const isHome = !currentHash || currentHash === '#/' || currentHash === '#';
+  const projectId = isHome ? null : currentHash.replace('#/', '');
+
+  return (
+    <>
+      {/* 1. Page Routing */}
+      {isHome ? (
+        <Home />
+      ) : (
+        <DocsViewer 
+          projectId={projectId} 
+          onImageClick={setModalImage} 
+        />
+      )}
+
+      {/* 2. Global Image Modal (Available on all pages) */}
+      {modalImage && (
+        <ImageModal
+          src={modalImage.src}
+          alt={modalImage.alt}
+          caption={modalImage.caption}
+          onClose={() => setModalImage(null)}
+        />
+      )}
+    </>
+  );
+}
+
+export default App;
+
+
+
+
+
+--- PATH: src/components/ContentRenderer.jsx ---
+import React from "react";
+import { ChevronRight } from "lucide-react";
+import { processText } from "../utils/textProcessor";
+import CodeBlock from "./blocks/CodeBlock";
+import Alert from "./blocks/Alert";
+import ImageBlock from "./blocks/ImageBlock";
+import VideoBlock from "./blocks/VideoBlock";
+
+const ContentRenderer = ({ content, onImageClick }) => {
+  if (!content) return null;
+  return (
+    <div className="space-y-4">
+      {content.map((block, index) => {
+        switch (block.type) {
+          case 'header':
+            return <h1 key={index} className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-6 pb-2 border-b border-slate-800 pt-10">{processText(block.text)}</h1>;
+          case 'header2':
+            return <h2 key={index} className="text-2xl font-semibold text-slate-100 mt-8 mb-4 flex items-center gap-2 pt-6"><ChevronRight className="text-purple-500" size={20}/> {processText(block.text)}</h2>;
+          case 'text':
+            return <p key={index} className="text-slate-400 leading-7 text-lg">{processText(block.text)}</p>;
+          case 'code':
+            return <CodeBlock key={index} code={block.code} language={block.language} />;
+          case 'alert':
+            return <Alert key={index} variant={block.variant} title={block.title} text={block.text} />;
+          case 'image':
+            return <ImageBlock key={index} src={block.src} alt={block.alt} caption={block.caption} onImageClick={onImageClick} />;
+          case 'video':
+            return <VideoBlock key={index} videoId={block.videoId} title={block.title} />;
+          case 'list':
+            return <ul key={index} className="list-disc pl-5 space-y-2 text-slate-400 marker:text-purple-500">{block.items.map((item, i) => <li key={i}>{processText(item)}</li>)}</ul>;
+          default: return null;
+        }
+      })}
+    </div>
+  );
+};
+
+export default ContentRenderer;
+
+
+
+
+--- PATH: src/components/FadeInSection.jsx ---
+import React, { useState, useEffect, useRef } from 'react';
+
+const FadeInSection = ({ children, delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        // Once visible, set state and unobserve (so it doesn't fade out again)
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1, // Trigger when 10% of the element is visible
+      rootMargin: "0px 0px -50px 0px" // Offset slightly so it triggers before bottom
+    });
+
+    const currentElement = domRef.current;
+    if (currentElement) {
+      observer.observe(currentElement);
+    }
+
+    return () => {
+      if (currentElement) observer.unobserve(currentElement);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transition-all duration-1000 ease-out transform ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-20' // Start 20px down and invisible
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
+export default FadeInSection;
+
+
+
+
+--- PATH: src/components/ImageModal.jsx ---
+import React, { useEffect } from 'react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { X, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+
+const ImageModal = ({ src, alt, caption, onClose }) => {
+  if (!src) return null;
+
+  // Lock Body Scroll on Mount
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = originalStyle; };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+      
+      {/* Top Bar with Close Button */}
+      <div className="absolute top-0 right-0 z-[110] p-4">
+         <button 
+            onClick={onClose} 
+            className="p-2 rounded-full bg-slate-800/80 text-white hover:bg-slate-700 hover:text-red-400 transition-all border border-slate-700"
+            aria-label="Close Image Viewer"
+          >
+            <X size={24} />
+          </button>
+      </div>
+
+      {/* Main Area - FIXED */}
+      {/* 1. Removed 'flex items-center justify-center' so the container fills the screen fully */}
+      <div className="flex-grow relative w-full h-full overflow-hidden">
+        <TransformWrapper
+          initialScale={0.8}
+          minScale={0.5}
+          maxScale={8} 
+          centerOnInit={true}
+          wheel={{ step: 0.33 }}
+        >
+          {({ zoomIn, zoomOut, resetTransform }) => (
+            <>
+              {/* 2. Forced the Wrapper to take 100% width/height of the parent */}
+              <TransformComponent 
+                wrapperStyle={{ width: "100%", height: "100%" }}
+                contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <img 
+                  src={src} 
+                  alt={alt} 
+                  // 3. Image fits screen initially (max-h/max-w), but TransformScale handles the zoom
+                  className="max-h-full max-w-full object-contain cursor-grab active:cursor-grabbing shadow-2xl" 
+                />
+              </TransformComponent>
+
+              {/* Controls (Bottom Center) */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[102] flex gap-2 p-2 rounded-full bg-slate-900/80 border border-slate-700 backdrop-blur-sm shadow-2xl pointer-events-auto">
+                  <button onClick={() => zoomIn()} className="p-2 hover:bg-slate-800 rounded-full text-slate-300 hover:text-white transition-colors" title="Zoom In">
+                      <ZoomIn size={20} />
+                  </button>
+                  <button onClick={() => zoomOut()} className="p-2 hover:bg-slate-800 rounded-full text-slate-300 hover:text-white transition-colors" title="Zoom Out">
+                      <ZoomOut size={20} />
+                  </button>
+                  <button onClick={() => resetTransform()} className="p-2 hover:bg-slate-800 rounded-full text-slate-300 hover:text-white transition-colors" title="Reset View">
+                      <Maximize size={20} />
+                  </button>
+              </div>
+            </>
+          )}
+        </TransformWrapper>
+      </div>
+
+      {/* Caption Bar (Bottom) */}
+      {caption && (
+        <div className="p-4 text-center z-[105] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none relative">
+          <span className="inline-block text-sm text-slate-300 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-800 backdrop-blur-sm mb-12">
+            {caption}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ImageModal;
+
+
+
+
+--- PATH: src/components/Navbar.jsx ---
+import React from "react";
+import { Menu, Book, ArrowUpRight } from "lucide-react";
+
+const Navbar = ({ data, setIsSidebarOpen }) => (
+  <header className="fixed top-0 left-0 right-0 h-16 bg-[#0b0c15]/80 backdrop-blur-md border-b border-slate-800 z-50 shadow-xl">
+    <div className="flex items-center justify-between h-full px-4 lg:px-6">
+      <button onClick={() => setIsSidebarOpen(prev => !prev)} className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+        <Menu size={24} />
+      </button>
+      <div className="flex items-center gap-3">
+        <div className="p-1 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
+          <Book className="text-white" size={20} />
+        </div>
+        <h1 className="font-extrabold text-xl bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
+           JoshiDocs
+        </h1>
+      </div>
+      <a href="https://vpjoshi.in" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-2 text-sm font-medium px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-colors">
+        Portfolio <ArrowUpRight size={16} />
+      </a>
+      <div className="lg:hidden w-8" />
+    </div>
+  </header>
+);
+
+export default Navbar;
+
+
+
+
+--- PATH: src/components/ProjectCard.jsx ---
+import React from 'react';
+import { Cloud, Code, Cpu, ExternalLink, Github, BookOpen, Layers, Activity } from 'lucide-react';
+
+const ProjectCard = ({ project }) => {
+  const getIcon = (cat) => {
+    switch (cat?.toLowerCase()) {
+      case 'cloud': return <Cloud size={14} className="text-blue-400" />;
+      case 'ai': case 'ml': return <Cpu size={14} className="text-purple-400" />;
+      case 'iot': return <Activity size={14} className="text-green-400" />;
+      case 'web3': return <Layers size={14} className="text-pink-400" />;
+      default: return <Code size={14} className="text-slate-400" />;
+    }
+  };
+
+  return (
+    <div className="group relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 transition-all duration-500">
+      
+      {/* 1. Category Badge (Top Left) */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full">
+        {getIcon(project.category)}
+        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{project.category}</span>
+      </div>
+
+      {/* 2. Image (Background) */}
+      <img 
+        src={project.thumbnail} 
+        alt={project.title} 
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1 opacity-80 group-hover:opacity-40"
+      />
+
+      {/* 3. Content Overlay (Always visible at bottom, moves up on hover) */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center transition-all duration-300">
+        
+        {/* Title & Desc - Moves up when hovered */}
+        <div className="transform translate-y-16 group-hover:translate-y-[-20px] transition-transform duration-500">
+          <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">{project.title}</h3>
+          <p className="text-sm text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 max-w-[200px] mx-auto">
+            {project.description}
+          </p>
+        </div>
+
+        {/* 4. Circular Buttons (Scale up on hover) */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 pb-8 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100">
+          
+          <a href={project.links.docs} className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/50 transition-all hover:scale-110" title="Documentation">
+            <BookOpen size={20} />
+          </a>
+          
+          {project.links.github && (
+            <a href={project.links.github} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 shadow-lg transition-all hover:scale-110" title="GitHub Code">
+              <Github size={20} />
+            </a>
+          )}
+
+          {project.links.live && (
+            <a href={project.links.live} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/50 transition-all hover:scale-110" title="Live Demo">
+              <ExternalLink size={20} />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectCard;
+
+
+
+
+--- PATH: src/components/Sidebar.jsx ---
+import React from "react";
+
+
+const Sidebar = ({ data, activeSection, isOpen, setIsOpen }) => {
+  const handleScrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const y = element.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      {isOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsOpen(false)} />}
+      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 bg-[#0b0c15] border-r border-slate-800 transition-transform duration-300 lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 h-full overflow-y-auto custom-scrollbar">
+          <div className="mb-8 bg-slate-900/50 border border-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Project Name</p>
+            <h2 className="text-base font-bold text-slate-200 truncate" title={data.projectTitle}>
+              {data.projectTitle}
+            </h2>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+              <span className="text-xs font-mono text-slate-500">
+                {data.version || "Documentation"}
+              </span>
+            </div>
+          </div>
+          <nav className="space-y-8">
+            {data.sections.map((group, idx) => (
+              <div key={idx}>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 px-2">
+                  {group.category}
+                </h3>
+                <ul className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = activeSection === item.id;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          onClick={() => handleScrollToSection(item.id)}
+                          className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group relative ${
+                            isActive 
+                              ? "bg-blue-500/10 text-blue-400 font-medium" 
+                              : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/50"
+                          }`}
+                        >
+                          {isActive && <div className="w-1 h-4 rounded-full bg-blue-500 absolute -left-1.5" />}
+                          {item.title}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </div>
+      </aside>
+    </>
+  );
+};
+
+export default Sidebar;
+
+
+
+
+--- PATH: src/components/blocks/Alert.jsx ---
+import React from "react";
+import { Info, AlertTriangle, Zap } from "lucide-react";
+import { processText } from "../../utils/textProcessor";
+
+const Alert = ({ variant, title, text }) => {
+  const styles = {
+    info: { border: "border-blue-500/50", bg: "bg-blue-500/10", text: "text-blue-200", icon: <Info size={18} className="text-blue-400" /> },
+    warning: { border: "border-amber-500/50", bg: "bg-amber-500/10", text: "text-amber-200", icon: <AlertTriangle size={18} className="text-amber-400" /> },
+    tip: { border: "border-emerald-500/50", bg: "bg-emerald-500/10", text: "text-emerald-200", icon: <Zap size={18} className="text-emerald-400" /> },
+  };
+  const style = styles[variant] || styles.info;
+  return (
+    <div className={`my-6 p-4 rounded-lg border ${style.border} ${style.bg} flex gap-3 items-start`}>
+      <div className="mt-0.5 shrink-0">{style.icon}</div>
+      <div>
+        <h4 className={`font-semibold text-sm ${style.text} mb-1`}>{title}</h4>
+        <p className="text-sm text-slate-300 leading-relaxed">{processText(text)}</p>
+      </div>
+    </div>
+  );
+};
+
+export default Alert;
+
+
+
+
+--- PATH: src/components/blocks/CodeBlock.jsx ---
+import React from "react";
+
+const CodeBlock = ({ code, language }) => (
+  <div className="my-6 rounded-lg overflow-hidden border border-slate-700 bg-[#0d1117] shadow-xl">
+    <div className="flex items-center justify-between px-4 py-2 bg-slate-800/50 border-b border-slate-700">
+      <span className="text-xs font-mono text-slate-400 uppercase">{language}</span>
+      <div className="flex gap-1.5">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+        <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+      </div>
+    </div>
+    <div className="p-4 overflow-x-auto custom-scrollbar">
+      <pre className="text-sm font-mono text-slate-200"><code>{code}</code></pre>
+    </div>
+  </div>
+);
+
+export default CodeBlock;
+
+
+
+
+--- PATH: src/components/blocks/ImageBlock.jsx ---
+import React from "react";
+import { Image as ImageIcon } from "lucide-react";
+
+const ImageBlock = ({ src, alt, caption, onImageClick }) => (
+  <div className="my-8 group cursor-zoom-in" onClick={() => onImageClick({ src, alt, caption })}>
+    <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50 shadow-2xl transition-all duration-300 hover:border-blue-500">
+      <img 
+        src={src} 
+        alt={alt} 
+        loading="lazy"
+        // Use object-scale-down to ensure large diagrams don't get cropped poorly in thumbnail view
+        className="w-full h-auto object-scale-down max-h-[500px] bg-[#0f111a] transition-transform duration-300 group-hover:scale-[1.01]" 
+      />
+    </div>
+    {caption && (
+      <div className="mt-3 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <ImageIcon size={14} />
+        <span className="italic">{caption}</span>
+      </div>
+    )}
+  </div>
+);
+
+export default ImageBlock;
+
+
+
+
+--- PATH: src/components/blocks/VideoBlock.jsx ---
+import React from "react";
+import { Youtube } from "lucide-react";
+
+const VideoBlock = ({ videoId, title }) => (
+  <div className="my-8">
+    <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
+        <iframe
+            className="w-full h-full"
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title={title}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+        ></iframe>
+    </div>
+    {title && (
+      <div className="mt-3 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <Youtube size={16} className="text-red-500"/>
+        <span className="italic">Video: {title}</span>
+      </div>
+    )}
+  </div>
+);
+
+export default VideoBlock;
+
+
+
+
+--- PATH: src/index.css ---
+@import "tailwindcss";
+
+/* Custom Scrollbar (Keep this, it's good) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0b0c15;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* --- PROFESSIONAL BACKGROUNDS --- */
+
+/* 1. The Dot Pattern (Subtle, Technical) */
+.bg-grid-white {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.04)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+}
+
+/* 2. A subtle vignette to focus attention on the center */
+.bg-vignette {
+  background: radial-gradient(circle at center, transparent 0%, #000000 100%);
+}
+
+
+
+
+--- PATH: src/main.jsx ---
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+
+
+
+--- PATH: src/pages/DocsViewer.jsx ---
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import ContentRenderer from '../components/ContentRenderer';
+
+const DocsViewer = ({ projectId, onImageClick }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+
+  // 1. Fetch Data
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      const jsonUrl = `/data/${projectId}.json`;
+
+      try {
+        const response = await fetch(jsonUrl);
+        if (!response.ok) throw new Error("Project not found");
+        const jsonData = await response.json();
+        setData(jsonData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [projectId]);
+
+  // 2. Scroll Spy
+  useEffect(() => {
+    if (!data) return;
+    const allIds = data.sections.flatMap(g => g.items.map(i => i.id));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { rootMargin: '-20% 0px -60% 0px' }
+    );
+    allIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [data]);
+
+  if (loading) return <div className="min-h-screen bg-[#0f111a] flex justify-center items-center text-slate-500">Loading...</div>;
+
+  if (error) return (
+    <div className="min-h-screen bg-[#0f111a] flex flex-col justify-center items-center text-slate-400 gap-4">
+      <AlertTriangle size={48} className="text-red-500" />
+      <h2 className="text-xl font-bold text-slate-200">Doc Not Found</h2>
+      <a href="#/" className="px-4 py-2 bg-blue-600 rounded text-white">Go Home</a>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#0f111a] text-slate-200 font-sans selection:bg-purple-500/30">
+      <Navbar data={data} setIsSidebarOpen={setSidebarOpen} />
+      <Sidebar data={data} activeSection={activeSection} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <main className="lg:pl-72 pt-16 min-h-screen">
+        <div className="max-w-4xl mx-auto px-6 py-8 lg:py-16">
+          {data.sections.flatMap(group => 
+            group.items.map((item) => (
+              <section key={item.id} id={item.id} className="py-6 border-b border-slate-800 last:border-0">
+                <ContentRenderer content={item.content} onImageClick={onImageClick} />
+              </section>
+            ))
+          )}
+           <footer className="mt-20 pt-8 border-t border-slate-800 text-sm text-slate-500 text-center">
+            <p>© 2024 {data.projectTitle}.</p>
+          </footer>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default DocsViewer;
+
+
+
+
+--- PATH: src/pages/Home.jsx ---
+import React, { useState, useEffect } from 'react';
+import ProjectCard from '../components/ProjectCard';
+import { ArrowDown, Github, Linkedin, Twitter, Mail } from 'lucide-react';
+import FadeInSection from '../components/FadeInSection';
+import Navbar from '../components/Navbar';
+
+const Home = () => {
+  const [data, setData] = useState({ featured: [], hackathon: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/data/projects.json')
+      .then(res => res.json())
+      .then(jsonData => {
+        setData(jsonData);
+        setLoading(false);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  const handleScrollClick = (e) => {
+    e.preventDefault();
+    const element = document.getElementById('featured');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    // Base Background: Neutral Dark Gray (Slate-950)
+    <div className="relative min-h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans selection:bg-blue-500/30">
+        <Navbar />
+      
+      {/* --- PROFESSIONAL BACKGROUND LAYERS --- */}
+      {/* 1. Subtle Dot Grid */}
+      <div className="absolute inset-0 bg-grid-white/[0.05] pointer-events-none"></div>
+      
+      {/* 2. Vignette (Darkens edges to focus on content) */}
+      <div className="absolute inset-0 bg-vignette pointer-events-none"></div>
+
+      {/* 3. Top Glow (Subtle Blue Ambient Light) */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0"></div>
+
+      {/* --- MAIN CONTENT --- */}
+      <div className="relative z-10">
+        
+        {/* HERO SECTION */}
+        <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-40 mb-20">
+          
+          {/* Professional Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 rounded-full border border-slate-800 bg-slate-900/50 backdrop-blur-sm text-slate-400 text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Available for Summer 2026 Internships
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight mb-6">
+            VP Joshi
+          </h1>
+          
+          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
+            Cloud Engineer & Full Stack Developer. <br />
+            Specializing in <span className="text-slate-200 font-medium">Distributed Systems</span> and <span className="text-slate-200 font-medium">Scalable Architecture</span>.
+          </p>
+          
+          <div className="flex gap-4 mb-16">
+            <a href="#featured" onClick={handleScrollClick} className="px-6 py-3 rounded-lg bg-white text-black font-semibold hover:bg-slate-200 transition-colors">
+              View Work
+            </a>
+            <a href="https://github.com/yourusername" target="_blank" rel="noreferrer" className="px-6 py-3 rounded-lg bg-slate-900 border border-slate-800 text-white font-medium hover:bg-slate-800 transition-colors">
+              GitHub
+            </a>
+          </div>
+        </section>
+
+        {/* SECTION 1: FEATURED PROJECTS */}
+        <section id="featured" className="max-w-7xl mx-auto px-6 py-20">
+          <FadeInSection>
+            <div className="flex items-center justify-between mb-12 border-b border-slate-800 pb-4">
+              <h2 className="text-2xl font-semibold text-white">Featured Projects</h2>
+              <span className="text-sm text-slate-500 hidden md:block">Architecture & Engineering</span>
+            </div>
+          </FadeInSection>
+          
+          {loading ? (
+             <div className="h-64 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div></div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {data.featured.map((proj, index) => (
+                <FadeInSection key={proj.id} delay={index * 100}>
+                   <ProjectCard project={proj} />
+                </FadeInSection>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* SECTION 2: HACKATHON */}
+        <section className="max-w-7xl mx-auto px-6 py-20 pb-32">
+          <FadeInSection>
+            <div className="flex items-center justify-between mb-12 border-b border-slate-800 pb-4">
+              <h2 className="text-2xl font-semibold text-white">Hackathon & Experiments</h2>
+              <span className="text-sm text-slate-500 hidden md:block">Rapid Prototyping</span>
+            </div>
+          </FadeInSection>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {data.hackathon?.map((proj, index) => (
+               <FadeInSection key={proj.id} delay={index * 100}>
+                 <ProjectCard project={proj} />
+               </FadeInSection>
+            ))}
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <FadeInSection>
+          <footer className="border-t border-slate-900 bg-[#020617] py-16">
+            <div className="max-w-4xl mx-auto px-6 text-center">
+              <h3 className="text-xl font-semibold text-white mb-6">Let's Connect</h3>
+              <div className="flex justify-center gap-6 mb-8">
+                <SocialLink href="#" icon={<Github size={20} />} />
+                <SocialLink href="#" icon={<Linkedin size={20} />} />
+                <SocialLink href="#" icon={<Twitter size={20} />} />
+                <SocialLink href="mailto:hello@vpjoshi.in" icon={<Mail size={20} />} />
+              </div>
+              <p className="text-slate-600 text-sm">
+                © 2024 VP Joshi. <br />
+              </p>
+            </div>
+          </footer>
+        </FadeInSection>
+
+      </div>
+    </div>
+  );
+};
+
+// Simplified Social Link for Professional Look
+const SocialLink = ({ href, icon }) => (
+  <a 
+    href={href} 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition-all"
+  >
+    {icon}
+  </a>
+);
+
+export default Home;
+
+
+
+
+--- PATH: src/utils/textProcessor.jsx ---
+const processText = (text) => {
+    let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Changed from <b> to ** for markdown style
+    html = html.replace(/<b>(.*?)<\/b>/g, '<strong>$1</strong>'); // Keep support for legacy <b>
+    html = html.replace(/`(.*?)`/g, '<code class="bg-slate-700/50 text-slate-100 px-1 py-0.5 rounded text-[0.95em]">$1</code>');
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+};
+
+export { processText };
+
+
+

@@ -41,7 +41,8 @@
             { "type": "header", "text": "Ingestion Service" },
             { "type": "text", "text": "The `ingestor` is the entry point. It accepts JSON payloads, validates schemas, and pushes raw data to the `raw-events` Kafka topic." },
             { "type": "code", "language": "go", "code": "func (s *Server) HandleIngest(w http.ResponseWriter, r *http.Request) {\n    // Validate payload\n    if err := s.validator.Validate(r.Body); err != nil {\n        http.Error(w, \"Invalid Schema\", 400)\n        return\n    }\n    // Push to Kafka\n    s.kafkaProducer.Produce(\"raw-events\", r.Body)\n}" },
-            { "type": "alert", "variant": "tip", "title": "Performance", "text": "We use `Goroutines` to handle non-blocking Kafka writes, achieving sub-10ms response times." }
+            { "type": "alert", "variant": "tip", "title": "Performance", "text": "We use `Goroutines` to handle non-blocking Kafka writes, achieving sub-10ms response times." },
+            { "type": "pdf", "src": "pdf/test.pdf", "title": "Sample Document" }
           ]
         },
         {

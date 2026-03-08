@@ -47,7 +47,8 @@
               "folder": "my-report",
               "pages": 5,
               "title": "My Report"
-            }
+            },
+            { "type": "pdf", "src": "/pdf/SIH2024_CODE_MONKEYS.pdf", "title": "My Report" }
           ]
         },
         {

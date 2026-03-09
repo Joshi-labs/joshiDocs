@@ -1,0 +1,149 @@
+{
+  "projectTitle": "JoshiOTT - Streaming Platform",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "JoshiOTT - Netflix-Style Streaming Platform" },
+            { "type": "text", "text": "A **production-grade Netflix-style OTT streaming platform** built with Vite, React, Tailwind CSS, and a Node.js HLS backend. Authentication is fully serverless via **AWS Lambda + DynamoDB**. The platform is fully containerized with Docker Compose and deployed live on AWS EC2." },
+            { "type": "alert", "variant": "info", "title": "Live Platform", "text": "The platform is live at **ott.vpjoshi.in** — deployed on AWS EC2 with CloudFront CDN and Route 53." }
+          ]
+        },
+        {
+          "id": "screenshots",
+          "title": "Screenshots",
+          "content": [
+            { "type": "header", "text": "Screenshots" },
+            { "type": "image", "src": "/images/ott/home.png", "alt": "JoshiOTT Homepage", "caption": "Homepage — Netflix-style browsing UI built with React and Tailwind CSS." },
+            { "type": "image", "src": "/images/ott/watching.png", "alt": "HLS Streaming in Action", "caption": "HLS adaptive bitrate streaming — player auto-switches quality based on bandwidth." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "text", "text": "JoshiOTT solves three core problems — **efficient video transcoding**, **low-latency adaptive delivery**, and **secure serverless authentication** — without relying on expensive managed services like AWS MediaConvert or Cognito." },
+            { "type": "header2", "text": "Key Features" },
+            { "type": "list", "items": [
+              "**Adaptive Bitrate HLS**: FFmpeg transcodes videos into 240p, 480p, and 720p renditions — player auto-selects based on bandwidth.",
+              "**Serverless Auth**: AWS Lambda handles login/signup — no always-on auth server needed.",
+              "**DynamoDB**: Scalable NoSQL storage for user accounts and session management.",
+              "**CloudFront CDN**: Static frontend served from AWS edge locations for minimal latency globally.",
+              "**Docker Compose**: Entire frontend + backend stack containerized and deployed on a single EC2 instance.",
+              "**JWT Protection**: Every video chunk request validated server-side — content inaccessible without a valid token."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Self-Hosted Advantage", "text": "By using **FFmpeg locally** instead of AWS MediaConvert, and Docker Compose instead of EKS, the platform achieves production-grade video delivery at a fraction of managed service costs." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "aws-architecture",
+          "title": "AWS Architecture",
+          "content": [
+            { "type": "header", "text": "AWS Architecture" },
+            { "type": "image", "src": "/images/ott/aws_joshi_ott.jpg", "alt": "JoshiOTT AWS Architecture", "caption": "Figure 1: Full AWS architecture — Route 53 → CloudFront → EC2 with Docker Compose + Lambda auth." },
+            { "type": "header2", "text": "Request Flow" },
+            { "type": "list", "items": [
+              "① **User visits** ott.vpjoshi.in → **Route 53** resolves DNS.",
+              "② **CloudFront CDN** serves the static React frontend from the nearest edge location.",
+              "③ **Login/Signup** requests hit **API Gateway → Lambda** which verifies credentials via **DynamoDB** and issues a **JWT**.",
+              "④ Authenticated requests (with JWT) hit the **Node.js HLS server** running on EC2.",
+              "⑤ Backend validates JWT → responds with **authorized HLS video chunks**.",
+              "⑥ Player receives the master playlist and selects the optimal quality rendition."
+            ]},
+            { "type": "code", "language": "bash", "code": "# Simplified architecture\n[User Browser]\n       ↓\n[React Frontend (Vite + Tailwind)] ↔ [AWS Lambda Auth] ↔ [DynamoDB]\n       ↓\n[Node.js HLS Server] — serves adaptive HLS streams\n       ↓\n[EC2 Instance with Docker Compose] — hosts frontend + backend containers" }
+          ]
+        },
+        {
+          "id": "video-pipeline",
+          "title": "Video Pipeline",
+          "content": [
+            { "type": "header", "text": "Video Transcoding Pipeline" },
+            { "type": "text", "text": "Raw video uploads are processed through an **FFmpeg transcoding pipeline** that converts them into HLS format with three quality renditions. The player monitors playback performance and switches quality dynamically." },
+            { "type": "code", "language": "bash", "code": "# FFmpeg HLS transcoding — multi-quality output\nffmpeg -i input.mp4 \\\n  -filter_complex \"\n    [0:v]split=3[v1][v2][v3];\n    [v1]scale=1280:720[720p];\n    [v2]scale=854:480[480p];\n    [v3]scale=426:240[240p]\n  \" \\\n  -map [720p] -c:v libx264 -b:v 2800k -hls_time 6 -hls_playlist_type vod \\\n    -hls_segment_filename 'hls/720p_%03d.ts' hls/720p.m3u8 \\\n  -map [480p] -c:v libx264 -b:v 1400k -hls_time 6 -hls_playlist_type vod \\\n    -hls_segment_filename 'hls/480p_%03d.ts' hls/480p.m3u8 \\\n  -map [240p] -c:v libx264 -b:v 600k  -hls_time 6 -hls_playlist_type vod \\\n    -hls_segment_filename 'hls/240p_%03d.ts' hls/240p.m3u8" },
+            { "type": "header2", "text": "Master Playlist" },
+            { "type": "code", "language": "bash", "code": "# master.m3u8\n#EXTM3U\n#EXT-X-VERSION:3\n\n#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720\n720p.m3u8\n\n#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=854x480\n480p.m3u8\n\n#EXT-X-STREAM-INF:BANDWIDTH=600000,RESOLUTION=426x240\n240p.m3u8" },
+            { "type": "alert", "variant": "tip", "title": "Adaptive Bitrate", "text": "The HLS player continuously monitors download speed and buffer health. If bandwidth drops, it seamlessly switches from 720p to 480p or 240p mid-stream — no buffering, no interruption." }
+          ]
+        },
+        {
+          "id": "auth",
+          "title": "Authentication",
+          "content": [
+            { "type": "header", "text": "Serverless Authentication" },
+            { "type": "text", "text": "Authentication is fully **serverless** — AWS Lambda handles all login and signup logic. User credentials and sessions are stored in **DynamoDB**. On successful auth, a **JWT is issued** and used to protect all subsequent API and video stream requests." },
+            { "type": "code", "language": "javascript", "code": "// JWT validation middleware (Express)\nconst verifyToken = (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  if (!token) return res.status(401).json({ error: 'Unauthorized' });\n\n  try {\n    const decoded = jwt.verify(token, process.env.JWT_SECRET);\n    req.user = decoded;\n    next();\n  } catch (err) {\n    return res.status(403).json({ error: 'Invalid token' });\n  }\n};\n\n// Protected HLS stream route\napp.get('/stream/:videoId/:segment', verifyToken, (req, res) => {\n  const chunkPath = path.join(HLS_DIR, req.params.videoId, req.params.segment);\n  res.sendFile(chunkPath);\n});" },
+            { "type": "alert", "variant": "warning", "title": "Chunk-Level Protection", "text": "JWT is validated on **every HLS segment request** — not just the player page. Direct chunk URL access without a valid token returns 401. Content cannot be scraped or downloaded by bypassing the UI." }
+          ]
+        },
+        {
+          "id": "deployment",
+          "title": "Deployment",
+          "content": [
+            { "type": "header", "text": "Docker Compose Deployment" },
+            { "type": "text", "text": "The entire stack — React frontend and Node.js HLS backend — is containerized with **Docker Compose** and deployed on a single AWS EC2 instance. This keeps infrastructure simple and cost-efficient while maintaining full reproducibility." },
+            { "type": "code", "language": "yaml", "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  frontend:\n    build: ./public\n    ports:\n      - '80:80'\n    depends_on:\n      - backend\n\n  backend:\n    build: ./src\n    ports:\n      - '3000:3000'\n    environment:\n      - JWT_SECRET=${JWT_SECRET}\n      - AWS_REGION=${AWS_REGION}\n      - DYNAMODB_TABLE=${DYNAMODB_TABLE}\n    volumes:\n      - ./hls:/app/hls" },
+            { "type": "code", "language": "bash", "code": "# Deploy on EC2\ngit clone https://github.com/Joshi-labs/joshiott_latest.git\ncd joshiott_latest\n\n# Install dependencies\ncd public && npm install && npm run build\ncd ../src && npm install\n\n# Launch\ncd ..\ndocker-compose up --build -d\n\n# Access at\nhttps://ott.vpjoshi.in" },
+            { "type": "alert", "variant": "info", "title": "Prerequisites", "text": "Node.js v16+, Docker & Docker Compose, AWS credentials configured for Lambda and DynamoDB access, and SSH access to the EC2 instance." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Technical Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**Vite** - Fast build tooling and dev server.",
+              "**React JS** - Component-based Netflix-style UI.",
+              "**Tailwind CSS** - Utility-first responsive styling.",
+              "**HLS.js** - Browser-side adaptive bitrate HLS player."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Node JS + Express JS** - HLS stream server with JWT middleware.",
+              "**FFmpeg** - Video transcoding into 240p/480p/720p HLS renditions.",
+              "**JWT** - Stateless auth tokens protecting API and video chunks."
+            ]},
+            { "type": "header2", "text": "AWS Infrastructure" },
+            { "type": "list", "items": [
+              "**Route 53** - DNS routing.",
+              "**CloudFront CDN** - Static asset delivery from edge locations.",
+              "**Lambda** - Serverless auth handler via API Gateway.",
+              "**DynamoDB** - NoSQL storage for users and sessions.",
+              "**EC2** - Hosts the Docker Compose stack."
+            ]},
+            { "type": "header2", "text": "DevOps" },
+            { "type": "list", "items": [
+              "**Docker** - Containerized frontend and backend.",
+              "**Docker Compose** - Multi-container orchestration on EC2."
+            ]}
+          ]
+        },
+        {
+          "id": "api",
+          "title": "API Design",
+          "content": [
+            { "type": "header", "text": "Core API Endpoints" },
+            { "type": "code", "language": "bash", "code": "# Authentication (via AWS Lambda)\nPOST /api/auth/register     → Register user, store in DynamoDB, return JWT\nPOST /api/auth/login        → Verify credentials in DynamoDB, return JWT\n\n# Content\nGET  /api/content           → List all available titles\nGET  /api/content/:id       → Get title metadata and thumbnail\n\n# Streaming (JWT protected)\nGET  /stream/:videoId/master.m3u8     → Master HLS playlist\nGET  /stream/:videoId/:quality.m3u8  → Quality-specific playlist\nGET  /stream/:videoId/:segment.ts    → Individual video chunk\n\n# Watchlist (JWT protected)\nGET  /api/watchlist         → Get user's saved titles\nPOST /api/watchlist/:id     → Add title to watchlist\nDELETE /api/watchlist/:id   → Remove from watchlist" }
+          ]
+        }
+      ]
+    }
+  ]
+}

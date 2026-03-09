@@ -1,0 +1,211 @@
+{
+  "projectTitle": "SIH 2024 – DoJ AI Chatbot",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Department of Justice AI Chatbot" },
+            { "type": "text", "text": "An **AI-based interactive Chatbot and Virtual Assistant** built for the Department of Justice's website as part of Smart India Hackathon 2024. The system helps citizens, legal representatives, and government staff access judicial information instantly — without navigating complex government portals." },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** – 1700 | **Theme** – Smart Automation | **Team** – Code Monkeys (ID: 1363)" },
+            { "type": "pdf", "src": "/pdfs/SIH2024_CODE_MONKEYS_DoJ.pdf", "title": "Original SIH Submission" }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Citizens seeking legal information from the Department of Justice must navigate complex, fragmented government portals. Questions about court case status, judge appointments, e-filing procedures, and Tele Law services require visiting multiple websites — often in English only." },
+            { "type": "alert", "variant": "warning", "title": "Core Pain Points", "text": "No single point of access for DoJ information. Language barriers exclude non-English speakers. High burden on DoJ staff answering repetitive queries. Lack of real-time integration with judicial platforms like NJDG and eCourts." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Proposed Solution",
+          "content": [
+            { "type": "header", "text": "Our Solution" },
+            { "type": "text", "text": "A **custom AI chatbot** trained on legal datasets from doj.gov.in and law books, embedded directly into the DoJ website. Citizens simply ask questions in their language and get accurate, real-time answers — no form filling, no page navigation." },
+            { "type": "header2", "text": "Key Features" },
+            { "type": "list", "items": [
+              "**Multilingual Support**: Answers questions in multiple Indian languages via Google Translation API.",
+              "**Self-Learning Capability**: Uses machine learning to improve accuracy over time from user interactions.",
+              "**DoJ Systems Integration**: Connects with NJDG, eCourts, Fast Track Courts, and Tele Law services for real-time data retrieval.",
+              "**User-Friendly Interface**: Simple chat UI accessible to citizens, legal representatives, and government staff equally."
+            ]},
+            { "type": "header2", "text": "What Makes It Unique" },
+            { "type": "list", "items": [
+              "**Custom AI Model**: Trained by our team specifically on legal datasets — not a generic off-the-shelf LLM.",
+              "**AI That Learns**: Continuously improves from real user interactions, becoming more accurate over time.",
+              "**Scalable by Design**: Horizontally scalable — add RAM/CPU as DoJ expands services.",
+              "**Government Integration Ready**: Designed to plug into any government website like doj.gov.in."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Working Demo", "text": "Prototype demo available at **https://youtu.be/UXvvrmIAqxc**" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "image", "src": "/images/hackathon3/main.png", "alt": "DoJ Chatbot System Architecture", "caption": "Figure 1: End-to-end architecture from user query to AI response with learning loop." },
+            { "type": "header2", "text": "Request Flow — Step by Step" },
+            { "type": "list", "items": [
+              "① **User visits** the main DoJ website and opens the AI Chatbot UI.",
+              "② **User sends** a question or prompt to the server.",
+              "③ **Server forwards** the request to the locally hosted AI Instance.",
+              "④ **AI Instance** processes the query and sends output to the Learning Loop.",
+              "⑤ **User receives** the answer. The Learning Loop stores the interaction for future model improvement."
+            ]},
+            { "type": "header2", "text": "Development Lifecycle" },
+            { "type": "list", "items": [
+              "**Planning & Collecting**: Problem definition → Collect big data → Data improvements → Data annotation.",
+              "**Design & Training**: Model building → Evaluation → Training → Refinement (iterative loop).",
+              "**Deployment**: Edge devices → Launch → Maintenance."
+            ]},
+            { "type": "alert", "variant": "info", "title": "Government Integration", "text": "The system is designed to be integrated into **any government website** — not just doj.gov.in. The architecture is modular and the AI instance can be swapped or retrained for different departments." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Technical Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**React JS** – Component-based chatbot UI embedded in the DoJ website.",
+              "**Tailwind CSS** – Responsive, accessible styling.",
+              "**Bootstrap** – Additional UI component support."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Node JS + Express JS** – REST API server handling chat requests and routing.",
+              "**Python for AI** – Model inference, training pipeline, and data preprocessing."
+            ]},
+            { "type": "header2", "text": "AI & APIs" },
+            { "type": "list", "items": [
+              "**PyTorch + Pretrained Transformers** – Custom fine-tuned legal AI model.",
+              "**Google Translation API** – Multilingual support for regional Indian languages.",
+              "**Training Data Sources**: NJDG (njdg.ecourts.gov.in), doj.gov.in, MSR Law Books."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Fine-Tuning Approach", "text": "The AI model is fine-tuned using **PyTorch and pretrained transformer models** on legal datasets. This gives it domain-specific accuracy far beyond a general-purpose LLM for judicial queries." }
+          ]
+        },
+        {
+          "id": "ai-model",
+          "title": "AI Model Design",
+          "content": [
+            { "type": "header", "text": "AI Model Design" },
+            { "type": "text", "text": "The chatbot's core is a **custom fine-tuned transformer model** trained on Indian legal data. Unlike off-the-shelf solutions, this model understands judicial terminology, Indian law, and DoJ-specific workflows." },
+            { "type": "code", "language": "python", "code": "# Fine-tuning pipeline (simplified)\nfrom transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments\n\nmodel_name = 'meta-llama/Llama-3.2-3B-Instruct'\ntokenizer = AutoTokenizer.from_pretrained(model_name)\nmodel = AutoModelForCausalLM.from_pretrained(model_name)\n\n# Load legal dataset (DoJ + NJDG + Law Books)\ntrain_dataset = load_legal_dataset([\n    'doj.gov.in',\n    'njdg.ecourts.gov.in',\n    'msrlawbooks.in'\n])\n\ntraining_args = TrainingArguments(\n    output_dir='./doj-chatbot',\n    num_train_epochs=3,\n    per_device_train_batch_size=4,\n    learning_rate=2e-5,\n)\n\ntrainer = Trainer(\n    model=model,\n    args=training_args,\n    train_dataset=train_dataset,\n)\ntrainer.train()" },
+            { "type": "header2", "text": "Learning Loop" },
+            { "type": "text", "text": "Every interaction is passed through a **Learning Loop** — user queries and AI responses are logged, evaluated, and periodically used to retrain the model. This makes the chatbot progressively smarter with real DoJ user traffic." },
+            { "type": "alert", "variant": "warning", "title": "Language Strategy", "text": "Model is initially trained on **Hindi and Tamil** — the two most widely spoken non-English Indian languages. Google Translation API bridges the gap for less common regional languages, avoiding the need to retrain for each." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Feasibility",
+      "items": [
+        {
+          "id": "cost",
+          "title": "Cost Analysis",
+          "content": [
+            { "type": "header", "text": "Cost Breakdown" },
+            { "type": "list", "items": [
+              "**Google Cloud E2 Medium Instance** – ₹10,000/month",
+              "**Custom AI Model (locally hosted)** – ₹0/month",
+              "**Google Translation API** – ₹5,000/month",
+              "**Total** – ₹15,000/month ✅"
+            ]},
+            { "type": "header2", "text": "Competitor Cost Comparison" },
+            { "type": "list", "items": [
+              "**ChatGPT + Translation API** – ₹60,000/month",
+              "**Gemini + Translation API** – ₹50,000/month",
+              "**Vertex AI + Translation API** – ₹35,000/month",
+              "**Our AI + Translation API** – ₹15,000/month ✅"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "Our custom locally-hosted AI achieves a **75% cost reduction** compared to ChatGPT-based alternatives — making it sustainable for long-term government deployment." }
+          ]
+        },
+        {
+          "id": "risks",
+          "title": "Risks & Mitigations",
+          "content": [
+            { "type": "header", "text": "Risks & Mitigations" },
+            { "type": "header2", "text": "Data Availability" },
+            { "type": "text", "text": "**Challenge**: High-quality training data in regional Indian languages is limited compared to English and Hindi." },
+            { "type": "text", "text": "**Mitigation**: Launch with Hindi and Tamil first, then gradually expand. Use **Google Translation API** as a bridge for less widely spoken languages — avoiding the need to source rare training data." },
+            { "type": "header2", "text": "User Adoption" },
+            { "type": "text", "text": "**Challenge**: Public unfamiliarity with digital judicial services may slow adoption, especially in rural areas." },
+            { "type": "text", "text": "**Mitigation**: Extremely simple chat interface — no technical knowledge required. Multilingual support ensures citizens can interact in their native language from day one." },
+            { "type": "alert", "variant": "info", "title": "Scalability", "text": "The system scales **horizontally** — additional RAM and CPU can be added as DoJ expands services. No architectural changes needed as user load grows." }
+          ]
+        },
+        {
+          "id": "impact",
+          "title": "Impact & Benefits",
+          "content": [
+            { "type": "header", "text": "Impact & Benefits" },
+            { "type": "header2", "text": "Target Audience Impact" },
+            { "type": "list", "items": [
+              "**Increased Trust**: Real-time court data increases transparency and public trust in the legal system.",
+              "**Easier Access**: Citizens get legal information instantly by asking in their own language."
+            ]},
+            { "type": "header2", "text": "Social Benefits" },
+            { "type": "list", "items": [
+              "**Inclusivity**: Multilingual support bridges language gaps, making justice accessible to non-English speakers.",
+              "**Timely Assistance**: Empowers citizens to take prompt legal action without waiting for staff responses."
+            ]},
+            { "type": "header2", "text": "Economic Benefits" },
+            { "type": "list", "items": [
+              "**Cost Savings for DoJ**: Automating routine query responses reduces the need for dedicated human staff.",
+              "**Economic Accessibility**: Free platform enables citizens from all economic backgrounds to access legal services."
+            ]},
+            { "type": "header2", "text": "Environmental Benefits" },
+            { "type": "list", "items": [
+              "**Paperless Transactions**: Digital e-filing reduces paper consumption and environmental waste.",
+              "**Reduced Carbon Footprint**: Citizens access services remotely, eliminating travel to courts and reducing emissions."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Broader Vision", "text": "This system is designed to be **department-agnostic** — the same architecture can be deployed across any Indian government ministry, making it a reusable national-scale platform for citizen services." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "References",
+      "items": [
+        {
+          "id": "references",
+          "title": "Research & References",
+          "content": [
+            { "type": "header", "text": "Research & References" },
+            { "type": "header2", "text": "AI Model Research" },
+            { "type": "list", "items": [
+              "Fine-tuning LLMs with PyTorch – https://pytorch.org/blog/finetune-llms/",
+              "Cost Comparison Research – https://drive.google.com/file/d/1LLBtgHimlXVUyjpfESrEeoc6QCTW6kZm/view"
+            ]},
+            { "type": "header2", "text": "Training Datasets" },
+            { "type": "list", "items": [
+              "National Judicial Data Grid – https://njdg.ecourts.gov.in/njdgnew/index.php",
+              "Department of Justice – https://doj.gov.in/",
+              "MSR Law Books – https://www.msrlawbooks.in/"
+            ]},
+            { "type": "header2", "text": "Demo" },
+            { "type": "video", "videoId": "UXvvrmIAqxc", "title": "Working Prototype Demo" }
+          ]
+        }
+      ]
+    }
+  ]
+}

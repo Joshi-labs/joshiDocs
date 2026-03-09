@@ -11,7 +11,7 @@
           "content": [
             { "type": "header", "text": "Dark Web Monitoring System" },
             { "type": "text", "text": "A **Dark Web Monitoring System** built for BrahmaX 1.0 at Baderia Global Institute of Engineering and Management, Jabalpur. The system uses AI-powered crawlers to monitor dark web activity, classify threats in real-time, and alert authorities automatically." },
-            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Theme** – Cyber | **Problem Statement** – Create A Dark Web Monitoring System | **Team** – Pratishtha (ID: 32395993)" },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Theme** - Cyber | **Problem Statement** - Create A Dark Web Monitoring System | **Team** - Pratishtha (ID: 32395993)" },
             { "type": "pdf", "src": "/pdfs/CODECRAX.pdf", "title": "Original BrahmaX Submission" }
           ]
         },
@@ -45,8 +45,7 @@
               "**Cost-Efficient**: Entire stack runs free locally — no API costs, no infrastructure fees.",
               "**Intelligent Threat Correlation**: Automatically links related dark web activities, users, and data dumps to reveal hidden connections.",
               "**Steganography Detection**: Identifies hidden data embedded in images on dark web pages."
-            ]},
-            { "type": "alert", "variant": "tip", "title": "Live Demo", "text": "Frontend demo is live at **https://joshi-labs.github.io/darknet/**" }
+            ]}
           ]
         }
       ]
@@ -70,11 +69,11 @@
             ]},
             { "type": "header2", "text": "Dashboard Modules" },
             { "type": "list", "items": [
-              "**Email Alerts** – Automated threat notifications",
-              "**Admin Dashboard** – Central monitoring interface",
-              "**Threat Origin Heatmap** – Geographic visualization of attack origins",
-              "**Credential Leak Detector** – Matches scraped data against known credential databases",
-              "**Threat Correlation Engine** – Links related activities across the dark web"
+              "**Email Alerts** - Automated threat notifications",
+              "**Admin Dashboard** - Central monitoring interface",
+              "**Threat Origin Heatmap** - Geographic visualization of attack origins",
+              "**Credential Leak Detector** - Matches scraped data against known credential databases",
+              "**Threat Correlation Engine** - Links related activities across the dark web"
             ]}
           ]
         },
@@ -85,21 +84,21 @@
             { "type": "header", "text": "Technical Stack" },
             { "type": "header2", "text": "Frontend" },
             { "type": "list", "items": [
-              "**React JS** – Component-based UI for the monitoring dashboard.",
-              "**Tailwind CSS** – Utility-first styling for responsive design.",
-              "**Bootstrap** – Additional UI component support."
+              "**React JS** - Component-based UI for the monitoring dashboard.",
+              "**Tailwind CSS** - Utility-first styling for responsive design.",
+              "**Bootstrap** - Additional UI component support."
             ]},
             { "type": "header2", "text": "Backend" },
             { "type": "list", "items": [
-              "**Python + Flask** – Core server, REST API layer, and scraping orchestration.",
-              "**SQLite3** – Lightweight database for storing scraped data and threat records.",
-              "**Docker** – Containerized deployment for reproducibility and isolation."
+              "**Python + Flask** - Core server, REST API layer, and scraping orchestration.",
+              "**SQLite3** - Lightweight database for storing scraped data and threat records.",
+              "**Docker** - Containerized deployment for reproducibility and isolation."
             ]},
             { "type": "header2", "text": "Infrastructure & AI" },
             { "type": "list", "items": [
-              "**Tor Network** – Routes all dark web traffic through `.onion` endpoints anonymously.",
-              "**Meta LLaMA 3.2 3B (Custom Instruct)** – Locally hosted AI for threat classification and risk scoring.",
-              "**Hosting** – Local deployment (free) or AWS EC2 (₹15,000/month with GPU support)."
+              "**Tor Network** - Routes all dark web traffic through `.onion` endpoints anonymously.",
+              "**Meta LLaMA 3.2 3B (Custom Instruct)** - Locally hosted AI for threat classification and risk scoring.",
+              "**Hosting** - Local deployment (free) or AWS EC2 (₹15,000/month with GPU support)."
             ]},
             { "type": "alert", "variant": "info", "title": "AI Model", "text": "Uses a **custom fine-tuned Meta LLaMA 3.2 3B Instruct** model running entirely on-premise. No data leaves the system — critical for handling sensitive dark web intelligence." }
           ]
@@ -143,12 +142,12 @@
             { "type": "header", "text": "Cost Breakdown" },
             { "type": "header2", "text": "Deployment Options" },
             { "type": "list", "items": [
-              "**Local + Local LLM** – ₹0/month (fully free, recommended for agencies)",
-              "**GCP + Local LLM** – ₹15,000/month (cloud hosted with GPU support)",
-              "**AWS + ChatGPT API** – ₹20,000/month",
-              "**AWS + Gemini API** – ₹18,000/month"
+              "**Local + Local LLM** - ₹0/month (fully free, recommended for agencies)",
+              "**GCP + Local LLM** - ₹15,000/month (cloud hosted with GPU support)",
+              "**AWS + ChatGPT API** - ₹20,000/month",
+              "**AWS + Gemini API** - ₹18,000/month"
             ]},
-            { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "By running **Meta LLaMA locally**, the system costs **₹0/month** for government agencies and law enforcement — compared to ₹18,000–₹20,000/month for cloud AI alternatives." }
+            { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "By running **Meta LLaMA locally**, the system costs **₹0/month** for government agencies and law enforcement — compared to ₹18,000-₹20,000/month for cloud AI alternatives." }
           ]
         },
         {
@@ -207,14 +206,14 @@
           "content": [
             { "type": "header", "text": "Research & References" },
             { "type": "list", "items": [
-              "DDoS Protection Bypass Research – https://media.blackhat.com/us-13/US-13-Nixon-Denying-Service-to-DDOS-Protection-Services-WP.pdf",
-              "Selenium reCAPTCHA Solver – https://pypi.org/project/selenium-recaptcha-solver/",
-              "IBM Threat Intelligence Overview – https://www.ibm.com/think/topics/threat-intelligence",
-              "Flask Documentation – https://flask.palletsprojects.com/en/stable/",
-              "Project Research Document – https://drive.google.com/file/d/1bLHND9UmYAc-NAgTxGG-KhXWF0or07ww/view"
+              "DDoS Protection Bypass Research - https://media.blackhat.com/us-13/US-13-Nixon-Denying-Service-to-DDOS-Protection-Services-WP.pdf",
+              "Selenium reCAPTCHA Solver - https://pypi.org/project/selenium-recaptcha-solver/",
+              "IBM Threat Intelligence Overview - https://www.ibm.com/think/topics/threat-intelligence",
+              "Flask Documentation - https://flask.palletsprojects.com/en/stable/",
+              "Project Research Document - https://drive.google.com/file/d/1bLHND9UmYAc-NAgTxGG-KhXWF0or07ww/view"
             ]},
-            { "type": "header2", "text": "Live Demo" },
-            { "type": "alert", "variant": "tip", "title": "Frontend Demo", "text": "The current frontend prototype is live at **https://joshi-labs.github.io/darknet/** — built with React JS and Tailwind CSS." }
+            { "type": "header2", "text": "Demo" },
+            { "type": "video", "videoId": "NUIAEJaAVQI", "title": "BrahmaX 1.0 - Dark Web Monitor Demo" }
           ]
         }
       ]

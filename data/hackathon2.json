@@ -61,11 +61,11 @@
             { "type": "image", "src": "/images/hackathon2/main.png", "alt": "Dark Web Monitor System Architecture", "caption": "Figure 1: Full pipeline from dark web scraping to threat dashboard and email alerts." },
             { "type": "header2", "text": "Data Pipeline — Step by Step" },
             { "type": "list", "items": [
-              "① **Fetch**: Dark Web Scrapper fetches HTML from predefined `.onion` endpoints over the Tor network.",
-              "② **Store**: Raw HTML and metadata stored in central SQLite database for scheduled analysis and threat correlation.",
-              "③ **Classify**: Raw data fed into the locally hosted **Meta LLaMA AI** for classification, threat analysis, and risk scoring.",
-              "④ **Visualize**: Analyzed data displayed on the admin dashboard with geo heatmaps, credential leak insights, and threat severity scores.",
-              "⑤ **Alert**: Automated email alerts sent to authorities after thorough analysis of detected threats."
+              "**Fetch**: Dark Web Scrapper fetches HTML from predefined `.onion` endpoints over the Tor network.",
+              "**Store**: Raw HTML and metadata stored in central SQLite database for scheduled analysis and threat correlation.",
+              "**Classify**: Raw data fed into the locally hosted **Meta LLaMA AI** for classification, threat analysis, and risk scoring.",
+              "**Visualize**: Analyzed data displayed on the admin dashboard with geo heatmaps, credential leak insights, and threat severity scores.",
+              "**Alert**: Automated email alerts sent to authorities after thorough analysis of detected threats."
             ]},
             { "type": "header2", "text": "Dashboard Modules" },
             { "type": "list", "items": [

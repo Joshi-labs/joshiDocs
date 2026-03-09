@@ -1,5 +1,5 @@
 {
-  "projectTitle": "SIH 2024 – DoJ AI Chatbot",
+  "projectTitle": "SIH 2024 - DoJ AI Chatbot",
   "version": "v1.0.0",
   "sections": [
     {
@@ -11,7 +11,7 @@
           "content": [
             { "type": "header", "text": "Department of Justice AI Chatbot" },
             { "type": "text", "text": "An **AI-based interactive Chatbot and Virtual Assistant** built for the Department of Justice's website as part of Smart India Hackathon 2024. The system helps citizens, legal representatives, and government staff access judicial information instantly — without navigating complex government portals." },
-            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** – 1700 | **Theme** – Smart Automation | **Team** – Code Monkeys (ID: 1363)" },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** - 1700 | **Theme** - Smart Automation | **Team** - Code Monkeys (ID: 1363)" },
             { "type": "pdf", "src": "/pdfs/SIH2024_CODE_MONKEYS_DoJ.pdf", "title": "Original SIH Submission" }
           ]
         },
@@ -60,11 +60,11 @@
             { "type": "image", "src": "/images/hackathon3/main.png", "alt": "DoJ Chatbot System Architecture", "caption": "Figure 1: End-to-end architecture from user query to AI response with learning loop." },
             { "type": "header2", "text": "Request Flow — Step by Step" },
             { "type": "list", "items": [
-              "① **User visits** the main DoJ website and opens the AI Chatbot UI.",
-              "② **User sends** a question or prompt to the server.",
-              "③ **Server forwards** the request to the locally hosted AI Instance.",
-              "④ **AI Instance** processes the query and sends output to the Learning Loop.",
-              "⑤ **User receives** the answer. The Learning Loop stores the interaction for future model improvement."
+              "**User visits** the main DoJ website and opens the AI Chatbot UI.",
+              "**User sends** a question or prompt to the server.",
+              "**Server forwards** the request to the locally hosted AI Instance.",
+              "**AI Instance** processes the query and sends output to the Learning Loop.",
+              "**User receives** the answer. The Learning Loop stores the interaction for future model improvement."
             ]},
             { "type": "header2", "text": "Development Lifecycle" },
             { "type": "list", "items": [
@@ -82,19 +82,19 @@
             { "type": "header", "text": "Technical Stack" },
             { "type": "header2", "text": "Frontend" },
             { "type": "list", "items": [
-              "**React JS** – Component-based chatbot UI embedded in the DoJ website.",
-              "**Tailwind CSS** – Responsive, accessible styling.",
-              "**Bootstrap** – Additional UI component support."
+              "**React JS** - Component-based chatbot UI embedded in the DoJ website.",
+              "**Tailwind CSS** - Responsive, accessible styling.",
+              "**Bootstrap** - Additional UI component support."
             ]},
             { "type": "header2", "text": "Backend" },
             { "type": "list", "items": [
-              "**Node JS + Express JS** – REST API server handling chat requests and routing.",
-              "**Python for AI** – Model inference, training pipeline, and data preprocessing."
+              "**Node JS + Express JS** - REST API server handling chat requests and routing.",
+              "**Python for AI** - Model inference, training pipeline, and data preprocessing."
             ]},
             { "type": "header2", "text": "AI & APIs" },
             { "type": "list", "items": [
-              "**PyTorch + Pretrained Transformers** – Custom fine-tuned legal AI model.",
-              "**Google Translation API** – Multilingual support for regional Indian languages.",
+              "**PyTorch + Pretrained Transformers** - Custom fine-tuned legal AI model.",
+              "**Google Translation API** - Multilingual support for regional Indian languages.",
               "**Training Data Sources**: NJDG (njdg.ecourts.gov.in), doj.gov.in, MSR Law Books."
             ]},
             { "type": "alert", "variant": "tip", "title": "Fine-Tuning Approach", "text": "The AI model is fine-tuned using **PyTorch and pretrained transformer models** on legal datasets. This gives it domain-specific accuracy far beyond a general-purpose LLM for judicial queries." }
@@ -123,17 +123,17 @@
           "content": [
             { "type": "header", "text": "Cost Breakdown" },
             { "type": "list", "items": [
-              "**Google Cloud E2 Medium Instance** – ₹10,000/month",
-              "**Custom AI Model (locally hosted)** – ₹0/month",
-              "**Google Translation API** – ₹5,000/month",
-              "**Total** – ₹15,000/month ✅"
+              "**Google Cloud E2 Medium Instance** - ₹10,000/month",
+              "**Custom AI Model (locally hosted)** - ₹0/month",
+              "**Google Translation API** - ₹5,000/month",
+              "**Total** - ₹15,000/month ✅"
             ]},
             { "type": "header2", "text": "Competitor Cost Comparison" },
             { "type": "list", "items": [
-              "**ChatGPT + Translation API** – ₹60,000/month",
-              "**Gemini + Translation API** – ₹50,000/month",
-              "**Vertex AI + Translation API** – ₹35,000/month",
-              "**Our AI + Translation API** – ₹15,000/month ✅"
+              "**ChatGPT + Translation API** - ₹60,000/month",
+              "**Gemini + Translation API** - ₹50,000/month",
+              "**Vertex AI + Translation API** - ₹35,000/month",
+              "**Our AI + Translation API** - ₹15,000/month ✅"
             ]},
             { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "Our custom locally-hosted AI achieves a **75% cost reduction** compared to ChatGPT-based alternatives — making it sustainable for long-term government deployment." }
           ]
@@ -192,14 +192,14 @@
             { "type": "header", "text": "Research & References" },
             { "type": "header2", "text": "AI Model Research" },
             { "type": "list", "items": [
-              "Fine-tuning LLMs with PyTorch – https://pytorch.org/blog/finetune-llms/",
-              "Cost Comparison Research – https://drive.google.com/file/d/1LLBtgHimlXVUyjpfESrEeoc6QCTW6kZm/view"
+              "Fine-tuning LLMs with PyTorch - https://pytorch.org/blog/finetune-llms/",
+              "Cost Comparison Research - https://drive.google.com/file/d/1LLBtgHimlXVUyjpfESrEeoc6QCTW6kZm/view"
             ]},
             { "type": "header2", "text": "Training Datasets" },
             { "type": "list", "items": [
-              "National Judicial Data Grid – https://njdg.ecourts.gov.in/njdgnew/index.php",
-              "Department of Justice – https://doj.gov.in/",
-              "MSR Law Books – https://www.msrlawbooks.in/"
+              "National Judicial Data Grid - https://njdg.ecourts.gov.in/njdgnew/index.php",
+              "Department of Justice - https://doj.gov.in/",
+              "MSR Law Books - https://www.msrlawbooks.in/"
             ]},
             { "type": "header2", "text": "Demo" },
             { "type": "video", "videoId": "UXvvrmIAqxc", "title": "Working Prototype Demo" }

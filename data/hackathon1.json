@@ -1,5 +1,5 @@
 {
-  "projectTitle": "SIH 2024 – Museum Ticketing Chatbot",
+  "projectTitle": "SIH 2024 - Museum Ticketing Chatbot",
   "version": "v1.0.0",
   "sections": [
     {
@@ -11,7 +11,7 @@
           "content": [
             { "type": "header", "text": "Museum Ticketing Chatbot" },
             { "type": "text", "text": "A **Multilingual AI Chatbot** based ticketing system built for Smart India Hackathon 2024. The system simplifies museum ticket booking for diverse linguistic communities across India, eliminating manual form filling and reducing operational overhead." },
-            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** – 1648 | **Theme** – Travel & Tourism | **Team** – Code Monkeys (ID: 1363)" },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** - 1648 | **Theme** - Travel & Tourism | **Team** - Code Monkeys (ID: 1363)" },
             { "type": "pdf", "src": "/pdfs/SIH2024_CODE_MONKEYS_MUSEUM.pdf", "title": "Original SIH Submission" }
           ]
         },
@@ -90,29 +90,29 @@
             { "type": "header", "text": "Technical Stack" },
             { "type": "header2", "text": "Frontend" },
             { "type": "list", "items": [
-              "**React JS** – Component-based UI for the booking interface.",
-              "**Tailwind CSS** – Utility-first styling for responsive design.",
-              "**Bootstrap** – Additional UI component support."
+              "**React JS** - Component-based UI for the booking interface.",
+              "**Tailwind CSS** - Utility-first styling for responsive design.",
+              "**Bootstrap** - Additional UI component support."
             ]},
             { "type": "header2", "text": "Backend" },
             { "type": "list", "items": [
-              "**Node JS + Express JS** – Core server and REST API layer.",
-              "**MySQL** – Relational database for bookings, users, and transactions.",
-              "**Python** – AI model integration and chatbot inference layer."
+              "**Node JS + Express JS** - Core server and REST API layer.",
+              "**MySQL** - Relational database for bookings, users, and transactions.",
+              "**Python** - AI model integration and chatbot inference layer."
             ]},
             { "type": "header2", "text": "Cloud & Infrastructure" },
             { "type": "list", "items": [
-              "**Google Cloud Platform** – Microservices architecture deployment.",
-              "**Google Cloud E2 Medium Instance** – Primary compute.",
-              "**Cloud SQL** – Managed MySQL database on GCP."
+              "**Google Cloud Platform** - Microservices architecture deployment.",
+              "**Google Cloud E2 Medium Instance** - Primary compute.",
+              "**Cloud SQL** - Managed MySQL database on GCP."
             ]},
             { "type": "header2", "text": "APIs & Services" },
             { "type": "list", "items": [
-              "**Razorpay** – Payment gateway with UPI, cards, and netbanking.",
-              "**Google Translation API** – Multilingual support for 20+ Indian languages.",
-              "**Google Analytics** – User behavior and funnel tracking.",
-              "**Mailgun** – Transactional email for booking confirmations.",
-              "**Textlocal API** – SMS notifications."
+              "**Razorpay** - Payment gateway with UPI, cards, and netbanking.",
+              "**Google Translation API** - Multilingual support for 20+ Indian languages.",
+              "**Google Analytics** - User behavior and funnel tracking.",
+              "**Mailgun** - Transactional email for booking confirmations.",
+              "**Textlocal API** - SMS notifications."
             ]},
             { "type": "alert", "variant": "info", "title": "AI Model", "text": "The chatbot runs on **Meta LLaMA 3**, hosted locally on the server. This eliminates per-token API costs and keeps all user data on-premise." }
           ]
@@ -138,19 +138,19 @@
           "content": [
             { "type": "header", "text": "Infrastructure Cost Breakdown" },
             { "type": "list", "items": [
-              "**Google Cloud E2 Medium Instance** – ₹15,000/month",
-              "**Cloud SQL Database** – ₹8,000/month",
-              "**Meta LLaMA (AI Model)** – ₹0 (runs locally)",
-              "**SMS via TextLocal** – ₹2,950 per 10,000 SMS",
-              "**Domain + Mailbox (Hostinger)** – ₹750 + ₹1,450",
-              "**Mailgun Email** – ₹1,300/month + ₹150 per 1,000 emails"
+              "**Google Cloud E2 Medium Instance** - ₹15,000/month",
+              "**Cloud SQL Database** - ₹8,000/month",
+              "**Meta LLaMA (AI Model)** - ₹0 (runs locally)",
+              "**SMS via TextLocal** - ₹2,950 per 10,000 SMS",
+              "**Domain + Mailbox (Hostinger)** - ₹750 + ₹1,450",
+              "**Mailgun Email** - ₹1,300/month + ₹150 per 1,000 emails"
             ]},
             { "type": "header2", "text": "Competitor Cost Comparison" },
             { "type": "list", "items": [
-              "**ChatGPT + AWS + APIs** – ₹80,000/month",
-              "**Gemini + Google Cloud + APIs** – ₹70,000/month",
-              "**Vertex AI + AWS + APIs** – ₹65,000/month",
-              "**LLaMA + Google Cloud + APIs (Our Stack)** – ₹30,000/month ✅"
+              "**ChatGPT + AWS + APIs** - ₹80,000/month",
+              "**Gemini + Google Cloud + APIs** - ₹70,000/month",
+              "**Vertex AI + AWS + APIs** - ₹65,000/month",
+              "**LLaMA + Google Cloud + APIs (Our Stack)** - ₹30,000/month ✅"
             ]},
             { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "By using **Meta LLaMA locally**, we achieve a **62% cost reduction** compared to ChatGPT-based alternatives, without compromising on AI quality." }
           ]
@@ -196,14 +196,14 @@
             { "type": "header", "text": "Research & References" },
             { "type": "header2", "text": "AI & Model Research" },
             { "type": "list", "items": [
-              "LLaMA 3 Research Paper – https://ai.meta.com/research/publications/the-llama-3-herd-of-models/",
-              "Museums using Chatbots – https://www.museumnext.com/article/how-are-museums-are-using-chatbots/"
+              "LLaMA 3 Research Paper - https://ai.meta.com/research/publications/the-llama-3-herd-of-models/",
+              "Museums using Chatbots - https://www.museumnext.com/article/how-are-museums-are-using-chatbots/"
             ]},
             { "type": "header2", "text": "Payment & Legal" },
             { "type": "list", "items": [
-              "Razorpay Payment Gateway Docs – https://razorpay.com/docs/payments/payment-gateway",
-              "Legal Work Research – Internal Drive Document",
-              "APIs Cost Comparison – Internal Drive Document"
+              "Razorpay Payment Gateway Docs - https://razorpay.com/docs/payments/payment-gateway",
+              "Legal Work Research - Internal Drive Document",
+              "APIs Cost Comparison - Internal Drive Document"
             ]},
             { "type": "header2", "text": "Demo" },
             { "type": "video", "videoId": "2zsQ9blK_zA", "title": "Working Prototype Demo" }

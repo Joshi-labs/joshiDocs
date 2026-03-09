@@ -1,0 +1,222 @@
+{
+  "projectTitle": "BrahmaX 1.0 - Dark Web Monitor",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Dark Web Monitoring System" },
+            { "type": "text", "text": "A **Dark Web Monitoring System** built for BrahmaX 1.0 at Baderia Global Institute of Engineering and Management, Jabalpur. The system uses AI-powered crawlers to monitor dark web activity, classify threats in real-time, and alert authorities automatically." },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Theme** - Cyber | **Problem Statement** - Create A Dark Web Monitoring System | **Team** - Pratishtha (ID: 32395993)" },
+            { "type": "pdf", "src": "/pdfs/CODECRAX.pdf", "title": "Original BrahmaX Submission" }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "The dark web is a breeding ground for cybercrime — stolen credentials, illegal marketplaces, data dumps, and coordinated attacks are planned and traded daily. Existing tools are expensive, fragmented, and inaccessible to government agencies and law enforcement who need them most." },
+            { "type": "alert", "variant": "warning", "title": "Core Challenges", "text": "Dark web sites use CAPTCHAs, JavaScript challenges, and constantly rotate domains to evade detection. Cybercriminals also hide data in images using **steganography**, making automated detection extremely difficult." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Proposed Solution",
+          "content": [
+            { "type": "header", "text": "Our Solution" },
+            { "type": "text", "text": "An **integrated dark web monitoring platform** that unifies data collection, AI-powered threat classification, and real-time alerting in a single resilient system. Everything runs locally — zero cloud dependency, zero per-token AI cost." },
+            { "type": "header2", "text": "Core Features" },
+            { "type": "list", "items": [
+              "**Dark Web Scraping**: Automated browsing agent crawls `.onion` endpoints over the Tor network.",
+              "**DDoS Protection Bypass**: Overcomes CAPTCHAs and JavaScript challenges to ensure continuous access.",
+              "**AI Classification**: Real-time threat classification and credential leak matching via a local LLM.",
+              "**Automated Email Alerts**: Instant notifications to authorities when critical threats are detected.",
+              "**Geo Heatmap & Threat Correlation Engine**: Visualizes dark web activity and links related threat patterns.",
+              "**Severity Visualizer & Prioritizer**: AI-powered color-coded risk ranking for swift incident response."
+            ]},
+            { "type": "header2", "text": "What Makes It Unique" },
+            { "type": "list", "items": [
+              "**Ultra-Low Latency**: Locally hosted AI means real-time analysis with zero cloud delay.",
+              "**Cost-Efficient**: Entire stack runs free locally — no API costs, no infrastructure fees.",
+              "**Intelligent Threat Correlation**: Automatically links related dark web activities, users, and data dumps to reveal hidden connections.",
+              "**Steganography Detection**: Identifies hidden data embedded in images on dark web pages."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "image", "src": "/images/hackathon2/main.png", "alt": "Dark Web Monitor System Architecture", "caption": "Figure 1: Full pipeline from dark web scraping to threat dashboard and email alerts." },
+            { "type": "header2", "text": "Data Pipeline — Step by Step" },
+            { "type": "list", "items": [
+              "① **Fetch**: Dark Web Scrapper fetches HTML from predefined `.onion` endpoints over the Tor network.",
+              "② **Store**: Raw HTML and metadata stored in central SQLite database for scheduled analysis and threat correlation.",
+              "③ **Classify**: Raw data fed into the locally hosted **Meta LLaMA AI** for classification, threat analysis, and risk scoring.",
+              "④ **Visualize**: Analyzed data displayed on the admin dashboard with geo heatmaps, credential leak insights, and threat severity scores.",
+              "⑤ **Alert**: Automated email alerts sent to authorities after thorough analysis of detected threats."
+            ]},
+            { "type": "header2", "text": "Dashboard Modules" },
+            { "type": "list", "items": [
+              "**Email Alerts** - Automated threat notifications",
+              "**Admin Dashboard** - Central monitoring interface",
+              "**Threat Origin Heatmap** - Geographic visualization of attack origins",
+              "**Credential Leak Detector** - Matches scraped data against known credential databases",
+              "**Threat Correlation Engine** - Links related activities across the dark web"
+            ]}
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Technical Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**React JS** - Component-based UI for the monitoring dashboard.",
+              "**Tailwind CSS** - Utility-first styling for responsive design.",
+              "**Bootstrap** - Additional UI component support."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Python + Flask** - Core server, REST API layer, and scraping orchestration.",
+              "**SQLite3** - Lightweight database for storing scraped data and threat records.",
+              "**Docker** - Containerized deployment for reproducibility and isolation."
+            ]},
+            { "type": "header2", "text": "Infrastructure & AI" },
+            { "type": "list", "items": [
+              "**Tor Network** - Routes all dark web traffic through `.onion` endpoints anonymously.",
+              "**Meta LLaMA 3.2 3B (Custom Instruct)** - Locally hosted AI for threat classification and risk scoring.",
+              "**Hosting** - Local deployment (free) or AWS EC2 (₹15,000/month with GPU support)."
+            ]},
+            { "type": "alert", "variant": "info", "title": "AI Model", "text": "Uses a **custom fine-tuned Meta LLaMA 3.2 3B Instruct** model running entirely on-premise. No data leaves the system — critical for handling sensitive dark web intelligence." }
+          ]
+        },
+        {
+          "id": "scraper",
+          "title": "Scraper Design",
+          "content": [
+            { "type": "header", "text": "Dark Web Scraper" },
+            { "type": "text", "text": "The scraper is the core data collection engine. It operates as a **headless browsing agent** over the Tor network, navigating `.onion` sites autonomously." },
+            { "type": "code", "language": "python", "code": "# Simplified scraper flow\nimport requests\nfrom bs4 import BeautifulSoup\n\nTOR_PROXY = {\n    'http': 'socks5h://127.0.0.1:9050',\n    'https': 'socks5h://127.0.0.1:9050'\n}\n\ndef scrape_onion(url: str) -> dict:\n    response = requests.get(url, proxies=TOR_PROXY, timeout=30)\n    soup = BeautifulSoup(response.text, 'html.parser')\n    return {\n        'url': url,\n        'html': response.text,\n        'text': soup.get_text(),\n        'links': [a['href'] for a in soup.find_all('a', href=True)]\n    }" },
+            { "type": "header2", "text": "CAPTCHA & Anti-Bot Bypass" },
+            { "type": "list", "items": [
+              "**Headless Selenium** for JavaScript-heavy sites that block plain HTTP requests.",
+              "**selenium-recaptcha-solver** library for automated CAPTCHA resolution.",
+              "**Human-assisted fallback** for complex CAPTCHAs that resist automation.",
+              "**Adaptive link traversal** — automatically discovers and follows new `.onion` links."
+            ]},
+            { "type": "alert", "variant": "warning", "title": "Steganography Detection", "text": "Cybercriminals embed hidden data in images using steganography. The scraper downloads and passes images through a **detection pipeline** to extract hidden payloads before analysis." }
+          ]
+        },
+        {
+          "id": "ai-pipeline",
+          "title": "AI Classification Pipeline",
+          "content": [
+            { "type": "header", "text": "AI Classification Pipeline" },
+            { "type": "text", "text": "Scraped raw HTML and text is passed to the **Meta LLaMA 3.2 3B custom instruct model** for intelligent classification. The model is fine-tuned specifically for cybersecurity threat identification." },
+            { "type": "code", "language": "python", "code": "# AI Classification Request\nimport ollama\n\ndef classify_threat(text: str) -> dict:\n    response = ollama.chat(\n        model='llama3.2-darkweb-instruct',\n        messages=[{\n            'role': 'user',\n            'content': f'Classify this dark web content and assess threat level:\\n\\n{text}'\n        }]\n    )\n    return {\n        'classification': response['message']['content'],\n        'severity': extract_severity(response),\n        'credentials_found': detect_credentials(text)\n    }" },
+            { "type": "alert", "variant": "tip", "title": "Risk Scoring", "text": "Every threat is assigned a **color-coded severity score** — Critical (Red), High (Orange), Medium (Yellow), Low (Green). The dashboard prioritizes by severity so analysts focus on what matters most." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Feasibility",
+      "items": [
+        {
+          "id": "cost",
+          "title": "Cost Analysis",
+          "content": [
+            { "type": "header", "text": "Cost Breakdown" },
+            { "type": "header2", "text": "Deployment Options" },
+            { "type": "list", "items": [
+              "**Local + Local LLM** - ₹0/month (fully free, recommended for agencies)",
+              "**GCP + Local LLM** - ₹15,000/month (cloud hosted with GPU support)",
+              "**AWS + ChatGPT API** - ₹20,000/month",
+              "**AWS + Gemini API** - ₹18,000/month"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "By running **Meta LLaMA locally**, the system costs **₹0/month** for government agencies and law enforcement — compared to ₹18,000-₹20,000/month for cloud AI alternatives." }
+          ]
+        },
+        {
+          "id": "risks",
+          "title": "Risks & Mitigations",
+          "content": [
+            { "type": "header", "text": "Challenges & Mitigations" },
+            { "type": "header2", "text": "Anti-Scraping Measures" },
+            { "type": "text", "text": "**Challenge**: Dark web sites deploy CAPTCHAs, JavaScript challenges, and login walls to block automated traffic." },
+            { "type": "text", "text": "**Mitigation**: Headless Selenium with `selenium-recaptcha-solver`, human-assisted CAPTCHA fallback, and adaptive link traversal." },
+            { "type": "header2", "text": "Domain Rotation" },
+            { "type": "text", "text": "**Challenge**: Marketplaces and forums constantly rotate domains and branding to evade detection and law enforcement." },
+            { "type": "text", "text": "**Mitigation**: The crawler uses **adaptive link traversal** — continuously discovering new links and updating its crawl targets automatically." },
+            { "type": "header2", "text": "Steganography" },
+            { "type": "text", "text": "**Challenge**: Hidden messages embedded in images bypass text-based detection entirely." },
+            { "type": "text", "text": "**Mitigation**: All images scraped from dark web pages are passed through a **steganography detection pipeline** before being discarded." },
+            { "type": "alert", "variant": "warning", "title": "Legal Note", "text": "This system is intended exclusively for **authorized cybersecurity agencies, government bodies, and law enforcement**. Unauthorized dark web monitoring may violate local laws." }
+          ]
+        },
+        {
+          "id": "impact",
+          "title": "Impact & Benefits",
+          "content": [
+            { "type": "header", "text": "Impact & Benefits" },
+            { "type": "header2", "text": "Target Audience" },
+            { "type": "list", "items": [
+              "Cybersecurity agencies and SOC teams needing real-time dark web intelligence.",
+              "Government bodies monitoring national security threats.",
+              "Law enforcement tracking cybercriminal activity and data breaches.",
+              "Non-technical users — accessible through a clean, user-friendly dashboard."
+            ]},
+            { "type": "header2", "text": "Social & Economic Impact" },
+            { "type": "list", "items": [
+              "Reduces cybercrime-related financial losses for individuals and businesses.",
+              "Protects national security and citizen privacy from data leaks.",
+              "Encourages digital-first threat tracking, reducing paper-based operations."
+            ]},
+            { "type": "header2", "text": "Long-Term Value" },
+            { "type": "list", "items": [
+              "**Modular architecture** — easily add new detection modules or data sources.",
+              "**Scalable** across regions and languages without core redesign.",
+              "**AI model evolves** — can be retrained to detect emerging threat categories.",
+              "**Expandable** to mobile apps, browser extensions, or third-party APIs."
+            ]},
+            { "type": "alert", "variant": "info", "title": "Proactive Intelligence", "text": "Real-time monitoring enables **prevention before damage** — risk scoring prioritizes critical threats and pattern recognition enables long-term trend analysis across the dark web." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "References",
+      "items": [
+        {
+          "id": "references",
+          "title": "References",
+          "content": [
+            { "type": "header", "text": "Research & References" },
+            { "type": "list", "items": [
+              "DDoS Protection Bypass Research - https://media.blackhat.com/us-13/US-13-Nixon-Denying-Service-to-DDOS-Protection-Services-WP.pdf",
+              "Selenium reCAPTCHA Solver - https://pypi.org/project/selenium-recaptcha-solver/",
+              "IBM Threat Intelligence Overview - https://www.ibm.com/think/topics/threat-intelligence",
+              "Flask Documentation - https://flask.palletsprojects.com/en/stable/",
+              "Project Research Document - https://drive.google.com/file/d/1bLHND9UmYAc-NAgTxGG-KhXWF0or07ww/view"
+            ]},
+            { "type": "header2", "text": "Demo" },
+            { "type": "video", "videoId": "NUIAEJaAVQI", "title": "BrahmaX 1.0 - Dark Web Monitor Demo" }
+          ]
+        }
+      ]
+    }
+  ]
+}

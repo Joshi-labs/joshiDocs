@@ -31,6 +31,7 @@ const ContentRenderer = ({ content, onImageClick }) => {
             return <ul key={index} className="list-disc pl-5 space-y-2 text-slate-400 marker:text-purple-500">{block.items.map((item, i) => <li key={i}>{processText(item)}</li>)}</ul>;
           case 'pdf':
             return <PdfBlock key={index} src={block.src} title={block.title} />;
+
           default: return null;
         }
       })}

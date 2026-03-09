@@ -1,0 +1,215 @@
+{
+  "projectTitle": "SIH 2024 – Museum Ticketing Chatbot",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Museum Ticketing Chatbot" },
+            { "type": "text", "text": "A **Multilingual AI Chatbot** based ticketing system built for Smart India Hackathon 2024. The system simplifies museum ticket booking for diverse linguistic communities across India, eliminating manual form filling and reducing operational overhead." },
+            { "type": "alert", "variant": "info", "title": "Hackathon Details", "text": "**Problem Statement ID** – 1648 | **Theme** – Travel & Tourism | **Team** – Code Monkeys (ID: 1363)" },
+            { "type": "pdf", "src": "/pdfs/SIH2024_CODE_MONKEYS_MUSEUM.pdf", "title": "Original SIH Submission" }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Museum ticketing in India suffers from long queues, complex booking forms, and a lack of support for regional languages. Over **90% of Indian internet users** prefer services in their local language, yet most ticketing platforms are English-only." },
+            { "type": "alert", "variant": "warning", "title": "Core Pain Points", "text": "Average booking time is **10 minutes** per user. Ticketing errors like double bookings are common. Staff costs for manual ticketing are high. No multilingual support for diverse visitors." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Proposed Solution",
+          "content": [
+            { "type": "header", "text": "Our Solution" },
+            { "type": "text", "text": "Development of a **Multilingual AI Chatbot** based Ticketing System specialized for diverse linguistic communities. The chatbot handles the entire booking flow conversationally — no forms, no queues." },
+            { "type": "header2", "text": "Key Features" },
+            { "type": "list", "items": [
+              "**Language Detection**: Automatically identifies and switches to the user's preferred language.",
+              "**No Form Filling**: Chatbot collects booking details conversationally and fills forms in the backend.",
+              "**Secure Payment Gateway**: Supports UPI, Credit/Debit cards, and Netbanking via Razorpay.",
+              "**Automated Email Confirmation**: Sends tickets and transaction details in the user's preferred language.",
+              "**Real Time Analytics**: Tracks user behavior and trends to optimize services."
+            ]},
+            { "type": "header2", "text": "What Makes It Unique" },
+            { "type": "list", "items": [
+              "Uses **Meta LLaMA** — a free and open source AI model, keeping costs minimal.",
+              "Completely **form-free booking** experience via natural conversation.",
+              "**Dynamic pricing** support based on time of day and special events.",
+              "**Membership programs** for frequent visitors with exclusive discounts."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Impact Numbers", "text": "**80%** reduction in ticketing errors · **75%** faster booking (10 min → 2.5 min) · **50%** savings on operational costs" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "image", "src": "/images/hackathon1/main.png", "alt": "System Architecture Diagram", "caption": "Figure 1: Full system architecture including Auth, Booking, Payment and Notification flows." },
+            { "type": "header2", "text": "Authentication Flow" },
+            { "type": "list", "items": [
+              "User submits credentials → Server encrypts using **Bcrypt**.",
+              "Server validates and issues a **JSON Web Token (JWT)**.",
+              "JWT is returned to the client for all further authenticated requests.",
+              "Hashed passwords and session IDs stored securely in MySQL."
+            ]},
+            { "type": "header2", "text": "Booking Flow" },
+            { "type": "list", "items": [
+              "User chats with AI Chatbot → Chatbot extracts booking intent and details.",
+              "Chatbot sends a structured **booking request to the server**.",
+              "Server processes request → redirects user to **Razorpay payment gateway**.",
+              "On payment success → **Email + SMS confirmation** sent to user in preferred language."
+            ]},
+            { "type": "header2", "text": "Cancellation Flow" },
+            { "type": "list", "items": [
+              "User requests cancellation via chatbot.",
+              "Chatbot sends **cancellation request to server**.",
+              "Server processes refund and updates the database.",
+              "Confirmation sent to user via email and SMS."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Microservices", "text": "Each service (Auth, Booking, Payment, Notifications, Analytics) is independently deployable on GCP, allowing targeted scaling during peak hours." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Technical Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**React JS** – Component-based UI for the booking interface.",
+              "**Tailwind CSS** – Utility-first styling for responsive design.",
+              "**Bootstrap** – Additional UI component support."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Node JS + Express JS** – Core server and REST API layer.",
+              "**MySQL** – Relational database for bookings, users, and transactions.",
+              "**Python** – AI model integration and chatbot inference layer."
+            ]},
+            { "type": "header2", "text": "Cloud & Infrastructure" },
+            { "type": "list", "items": [
+              "**Google Cloud Platform** – Microservices architecture deployment.",
+              "**Google Cloud E2 Medium Instance** – Primary compute.",
+              "**Cloud SQL** – Managed MySQL database on GCP."
+            ]},
+            { "type": "header2", "text": "APIs & Services" },
+            { "type": "list", "items": [
+              "**Razorpay** – Payment gateway with UPI, cards, and netbanking.",
+              "**Google Translation API** – Multilingual support for 20+ Indian languages.",
+              "**Google Analytics** – User behavior and funnel tracking.",
+              "**Mailgun** – Transactional email for booking confirmations.",
+              "**Textlocal API** – SMS notifications."
+            ]},
+            { "type": "alert", "variant": "info", "title": "AI Model", "text": "The chatbot runs on **Meta LLaMA 3**, hosted locally on the server. This eliminates per-token API costs and keeps all user data on-premise." }
+          ]
+        },
+        {
+          "id": "api-flow",
+          "title": "API Design",
+          "content": [
+            { "type": "header", "text": "Core API Endpoints" },
+            { "type": "code", "language": "bash", "code": "# Authentication\nPOST /api/auth/register     → Register new user\nPOST /api/auth/login        → Login, returns JWT\n\n# Chatbot\nPOST /api/chat              → Send message, get chatbot response\n\n# Bookings\nPOST /api/booking/create    → Create new booking\nGET  /api/booking/:id       → Get booking details\nDELETE /api/booking/:id     → Cancel booking\n\n# Payments\nPOST /api/payment/init      → Initialize Razorpay order\nPOST /api/payment/verify    → Verify payment signature" },
+            { "type": "header2", "text": "Chatbot Message Schema" },
+            { "type": "code", "language": "json", "code": "{\n  \"userId\": \"usr_12345\",\n  \"message\": \"I want to visit the museum this Sunday\",\n  \"language\": \"en\",\n  \"sessionId\": \"sess_abc123\"\n}" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Feasibility",
+      "items": [
+        {
+          "id": "cost",
+          "title": "Cost Analysis",
+          "content": [
+            { "type": "header", "text": "Infrastructure Cost Breakdown" },
+            { "type": "list", "items": [
+              "**Google Cloud E2 Medium Instance** – ₹15,000/month",
+              "**Cloud SQL Database** – ₹8,000/month",
+              "**Meta LLaMA (AI Model)** – ₹0 (runs locally)",
+              "**SMS via TextLocal** – ₹2,950 per 10,000 SMS",
+              "**Domain + Mailbox (Hostinger)** – ₹750 + ₹1,450",
+              "**Mailgun Email** – ₹1,300/month + ₹150 per 1,000 emails"
+            ]},
+            { "type": "header2", "text": "Competitor Cost Comparison" },
+            { "type": "list", "items": [
+              "**ChatGPT + AWS + APIs** – ₹80,000/month",
+              "**Gemini + Google Cloud + APIs** – ₹70,000/month",
+              "**Vertex AI + AWS + APIs** – ₹65,000/month",
+              "**LLaMA + Google Cloud + APIs (Our Stack)** – ₹30,000/month ✅"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Cost Advantage", "text": "By using **Meta LLaMA locally**, we achieve a **62% cost reduction** compared to ChatGPT-based alternatives, without compromising on AI quality." }
+          ]
+        },
+        {
+          "id": "risks",
+          "title": "Risks & Mitigations",
+          "content": [
+            { "type": "header", "text": "Potential Risks" },
+            { "type": "header2", "text": "Multilingual AI Accuracy" },
+            { "type": "text", "text": "**Challenge**: Training LLaMA with multiple Indian languages is resource-intensive and time-consuming." },
+            { "type": "text", "text": "**Mitigation**: Use **Google Translation API** to handle language translation as a middleware layer, keeping the core LLaMA model language-agnostic." },
+            { "type": "header2", "text": "Scalability Under Peak Load" },
+            { "type": "text", "text": "**Challenge**: Museum events and holidays can cause sudden traffic spikes." },
+            { "type": "text", "text": "**Mitigation**: GCP's **auto-scaling microservices** architecture allows independent scaling of the booking and payment services during peak hours." },
+            { "type": "alert", "variant": "warning", "title": "Data Privacy", "text": "All user PII is encrypted at rest using Bcrypt and AES-256. The LLaMA model runs locally — no user data is ever sent to third-party AI APIs." }
+          ]
+        },
+        {
+          "id": "impact",
+          "title": "Impact & Benefits",
+          "content": [
+            { "type": "header", "text": "Projected Impact" },
+            { "type": "list", "items": [
+              "**80%** reduction in ticketing errors such as double bookings or lost records.",
+              "**75%** faster booking — average time drops from 10 minutes to just 2.5 minutes.",
+              "**50%** savings on operational costs by reducing dedicated ticketing staff.",
+              "Reaches **90% of Indian internet users** who prefer services in their local language.",
+              "Dynamic pricing and membership programs drive visitor loyalty and repeat visits."
+            ]},
+            { "type": "alert", "variant": "info", "title": "Social Impact", "text": "By supporting regional Indian languages, the system makes cultural institutions like museums accessible to first-time digital users from Tier 2 and Tier 3 cities." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "References",
+      "items": [
+        {
+          "id": "references",
+          "title": "Research & References",
+          "content": [
+            { "type": "header", "text": "Research & References" },
+            { "type": "header2", "text": "AI & Model Research" },
+            { "type": "list", "items": [
+              "LLaMA 3 Research Paper – https://ai.meta.com/research/publications/the-llama-3-herd-of-models/",
+              "Museums using Chatbots – https://www.museumnext.com/article/how-are-museums-are-using-chatbots/"
+            ]},
+            { "type": "header2", "text": "Payment & Legal" },
+            { "type": "list", "items": [
+              "Razorpay Payment Gateway Docs – https://razorpay.com/docs/payments/payment-gateway",
+              "Legal Work Research – Internal Drive Document",
+              "APIs Cost Comparison – Internal Drive Document"
+            ]},
+            { "type": "header2", "text": "Demo" },
+            { "type": "video", "videoId": "2zsQ9blK_zA", "title": "Working Prototype Demo" }
+          ]
+        }
+      ]
+    }
+  ]
+}

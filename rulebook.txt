@@ -106,10 +106,13 @@ Embeds a YouTube player.
 
 H. PDF VIEWER
 Type: "pdf"
+Renders a full in-app PDF viewer with page navigation and download button.
+PDFs must be placed in public/pdfs/
+
 {
   "type": "pdf",
-  "src": "String (URL) - Path to PDF file e.g. /pdfs/doc.pdf",
-  "title": "String (Optional) - Label shown below viewer"
+  "src": "String - path to PDF e.g. /pdfs/report.pdf",
+  "title": "String (Optional) - shown in the top bar of the viewer"
 }
 
 ---

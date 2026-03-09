@@ -67,6 +67,9 @@ Type: "code"
 D. LISTS
 Type: "list"
 Renders a bulleted list. Supports inline formatting in items.
+
+(never use ① ② ③ as list element comes with bullets.)
+
 {
   "type": "list",
   "items": [

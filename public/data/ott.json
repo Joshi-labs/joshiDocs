@@ -54,12 +54,12 @@
             { "type": "image", "src": "/images/ott/aws_joshi_ott.jpg", "alt": "JoshiOTT AWS Architecture", "caption": "Figure 1: Full AWS architecture — Route 53 → CloudFront → EC2 with Docker Compose + Lambda auth." },
             { "type": "header2", "text": "Request Flow" },
             { "type": "list", "items": [
-              "① **User visits** ott.vpjoshi.in → **Route 53** resolves DNS.",
-              "② **CloudFront CDN** serves the static React frontend from the nearest edge location.",
-              "③ **Login/Signup** requests hit **API Gateway → Lambda** which verifies credentials via **DynamoDB** and issues a **JWT**.",
-              "④ Authenticated requests (with JWT) hit the **Node.js HLS server** running on EC2.",
-              "⑤ Backend validates JWT → responds with **authorized HLS video chunks**.",
-              "⑥ Player receives the master playlist and selects the optimal quality rendition."
+              "**User visits** ott.vpjoshi.in → **Route 53** resolves DNS.",
+              "**CloudFront CDN** serves the static React frontend from the nearest edge location.",
+              "**Login/Signup** requests hit **API Gateway → Lambda** which verifies credentials via **DynamoDB** and issues a **JWT**.",
+              "Authenticated requests (with JWT) hit the **Node.js HLS server** running on EC2.",
+              "Backend validates JWT → responds with **authorized HLS video chunks**.",
+              "Player receives the master playlist and selects the optimal quality rendition."
             ]},
             { "type": "code", "language": "bash", "code": "# Simplified architecture\n[User Browser]\n       ↓\n[React Frontend (Vite + Tailwind)] ↔ [AWS Lambda Auth] ↔ [DynamoDB]\n       ↓\n[Node.js HLS Server] — serves adaptive HLS streams\n       ↓\n[EC2 Instance with Docker Compose] — hosts frontend + backend containers" }
           ]

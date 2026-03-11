@@ -1,0 +1,194 @@
+{
+  "projectTitle": "Self-Hosted K8s Homelab Server",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Self-Hosted K8s Homelab Server" },
+            { "type": "text", "text": "A **production-grade self-hosted homelab server** running a full Kubernetes cluster on consumer hardware — serving real workloads 24/7. From AI inference to workflow automation to databases, everything runs on-premise with zero cloud dependency and a **₹10,000/month cost saving** over equivalent AWS infrastructure." },
+            { "type": "alert", "variant": "info", "title": "Live Services", "text": "**K8s API** - k8s-api.vpjoshi.in · **Public Monitoring** - stats.vpjoshi.in · **Grafana** - grafana.vpjoshi.in · All exposed securely via Cloudflare Tunnel — no open ports, no public IP." }
+          ]
+        },
+        {
+          "id": "hardware",
+          "title": "Hardware Specs",
+          "content": [
+            { "type": "header", "text": "Hardware Specs" },
+            { "type": "list", "items": [
+              "**CPU** - Intel Core i3-7100 (4 cores / 4 threads @ 3.9GHz)",
+              "**RAM** - 8 GB DDR4",
+              "**Storage** - 128 GB SSD",
+              "**Network** - Home ISP + Cloudflare Tunnel for public exposure",
+              "**OS** - Linux (Ubuntu Server)"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "AWS Equivalent", "text": "This hardware is roughly equivalent to an **AWS m5.large** (2 vCPU, 8GB RAM) — which costs ~₹10,000/month. The homelab runs the same workloads at near-zero marginal cost after the one-time hardware purchase." }
+          ]
+        },
+        {
+          "id": "cost",
+          "title": "Cost Savings",
+          "content": [
+            { "type": "header", "text": "Cost Savings" },
+            { "type": "list", "items": [
+              "**AWS m5.large** (equivalent compute) - ~₹7,500/month",
+              "**RDS Postgres** (db.t3.micro) - ~₹1,200/month",
+              "**n8n Cloud** (starter plan) - ~₹1,700/month",
+              "**LLaMA API** (hosted inference) - ~₹2,000+/month",
+              "**Total Cloud Cost** - ~₹12,000-14,000/month"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Actual Cost", "text": "Running everything self-hosted costs roughly **₹500-800/month** in electricity — saving **₹10,000+ per month** compared to equivalent cloud services. Hardware paid for itself in under 2 months." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "code", "language": "bash", "code": "┌──────────────────────────────────────────────────────────┐\n│                  homelab server (i3-7100)                │\n│                                                          │\n│  ┌────────────────────────────────────────────────────┐  │\n│  │              Kubernetes (k3s) Cluster              │  │\n│  │                                                    │  │\n│  │  ┌─────────┐  ┌─────────┐  ┌──────────────────┐    │  │\n│  │  │   n8n   │  │  LLaMA  │  │    PocketBase    │    │  │\n│  │  │(automat)│  │  3.2    │  │   (auth + db)    │    │  │\n│  │  └─────────┘  └─────────┘  └──────────────────┘    │  │\n│  │                                                    │  │\n│  │  ┌─────────┐  ┌──────────────────────────────┐     │  │\n│  │  │Postgres │  │     Monitoring Stack         │     │  │\n│  │  │  (db)   │  │  Prometheus + Grafana +      │     │  │\n│  │  └─────────┘  │  node_exporter + scaphandre  │     │  │\n│  │               │  stats.vpjoshi.in (public)   │     │  │\n│  │               └──────────────────────────────┘     │  │\n│  └────────────────────────────────────────────────────┘  │\n│                          │                               │\n│              ┌───────────▼───────────┐                   │\n│              │   Cloudflare Tunnel   │                   │\n│              │  (no open ports)      │                   │\n│              └───────────┬───────────┘                   │\n└──────────────────────────┼───────────────────────────────┘\n                           │\n          ┌────────────────┼─────────────────┐\n          ▼                ▼                 ▼\n  k8s-api.vpjoshi.in  stats.vpjoshi.in  grafana.vpjoshi.in\n  n8n.vpjoshi.in      (+ other services via ingress)" },
+            { "type": "alert", "variant": "info", "title": "Cloudflare Tunnel", "text": "No ports are open on the home router. **Cloudflare Tunnel** creates a secure outbound-only connection from the server to Cloudflare's edge — all traffic is proxied through Cloudflare with DDoS protection and TLS termination included for free." }
+          ]
+        },
+        {
+          "id": "kubernetes",
+          "title": "Kubernetes Cluster",
+          "content": [
+            { "type": "header", "text": "Kubernetes Cluster (k3s)" },
+            { "type": "text", "text": "The server runs a **k3s** (lightweight Kubernetes) cluster — the full K8s API with a fraction of the resource overhead. Every service is deployed as a K8s workload with proper resource limits, health checks, and rolling update support." },
+            { "type": "code", "language": "bash", "code": "# Cluster access\nexport KUBECONFIG=~/.kube/config\nkubectl get nodes\n# NAME         STATUS   ROLES                  AGE\n# homelab      Ready    control-plane,master   90d\n\nkubectl get pods -A\n# NAMESPACE    NAME                        READY   STATUS\n# default      n8n-xxx                     1/1     Running\n# default      llama-xxx                   1/1     Running\n# default      pocketbase-xxx              1/1     Running\n# default      postgres-xxx                1/1     Running\n# monitoring   prometheus-xxx              1/1     Running\n# monitoring   grafana-xxx                 1/1     Running\n# monitoring   stats-xxx                   1/1     Running" },
+            { "type": "alert", "variant": "tip", "title": "Why k3s?", "text": "Full K8s on 8GB RAM would leave little headroom for actual workloads. **k3s** uses ~500MB RAM for the control plane vs ~2GB for vanilla K8s — giving the workloads the memory they need." }
+          ]
+        },
+        {
+          "id": "cicd",
+          "title": "CI/CD Pipeline",
+          "content": [
+            { "type": "header", "text": "CI/CD Pipeline" },
+            { "type": "text", "text": "All services are deployed via **GitHub Actions** with a commit-message-based trigger. Only commits containing `[prod]` trigger a build and rolling deploy to the k3s cluster — preventing accidental deploys during development." },
+            { "type": "code", "language": "bash", "code": "push to main\n    │\n    ├── commit contains [prod]?\n    │       │\n    │       yes → build Docker image\n    │             → push to container registry\n    │             → kubectl rollout restart on k3s\n    │\n    └── no [prod] → lint + type-check only" },
+            { "type": "code", "language": "bash", "code": "# Trigger a production deploy\ngit commit -m \"feat: update n8n workflow config [prod]\"\ngit push" },
+            { "type": "alert", "variant": "info", "title": "Zero Downtime", "text": "K8s rolling updates ensure **zero downtime deploys** — new pods start before old ones terminate. Combined with health checks, a bad deploy is automatically rolled back if the new pod fails to start." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Services",
+      "items": [
+        {
+          "id": "services-overview",
+          "title": "Hosted Services",
+          "content": [
+            { "type": "header", "text": "Services Running on the Cluster" },
+            { "type": "header2", "text": "n8n - Workflow Automation" },
+            { "type": "text", "text": "**n8n** is a self-hosted workflow automation tool — equivalent to Zapier or Make. Runs as a K8s deployment, persists workflows to Postgres, and handles automated pipelines across APIs, databases, and webhooks." },
+            { "type": "header2", "text": "LLaMA 3.2 - Local AI Inference" },
+            { "type": "text", "text": "**Meta LLaMA 3.2** runs entirely on-premise via Ollama. No API costs, no data leaving the server. Used for local AI-powered tasks across projects — classification, summarization, and chat." },
+            { "type": "header2", "text": "PostgreSQL - Primary Database" },
+            { "type": "text", "text": "A **PostgreSQL** instance runs as a StatefulSet with persistent volume storage. Shared across services — n8n, PocketBase, and project-specific databases all connect to the same cluster." },
+            { "type": "header2", "text": "PocketBase - Backend-as-a-Service" },
+            { "type": "text", "text": "**PocketBase** provides auth, realtime, file storage, and a REST API out of the box. Used as a lightweight backend for internal projects and prototypes — deployed in under a minute as a single binary in a container." },
+            { "type": "alert", "variant": "tip", "title": "PocketBase vs Firebase", "text": "At ~10K MAU, Firebase costs ₹3,000-6,000/month. PocketBase on the homelab costs ₹0/month extra — it just runs as another pod. Estimated savings of **₹400-780/year** per project using it." }
+          ]
+        },
+        {
+          "id": "monitoring",
+          "title": "Monitoring Stack",
+          "content": [
+            { "type": "header", "text": "Monitoring Stack" },
+            { "type": "text", "text": "Two monitoring layers run on the cluster — one for internal use and one for public visibility." },
+            { "type": "header2", "text": "Grafana + Prometheus (Internal)" },
+            { "type": "text", "text": "**Prometheus** scrapes `node_exporter` and `scaphandre` every 10 seconds for full hardware metrics. **Grafana** provides rich dashboards — CPU, RAM, disk I/O, network, power draw, and K8s pod health — accessible at `grafana.vpjoshi.in` (auth protected)." },
+            { "type": "header2", "text": "stats.vpjoshi.in (Public)" },
+            { "type": "text", "text": "A custom **Next.js dashboard** that queries Prometheus server-side and renders a public-facing metrics page. Grafana dashboards require login — this exposes live server stats to anyone at `stats.vpjoshi.in` with no auth wall." },
+            { "type": "list", "items": [
+              "**CPU load, temperature, power draw** - live and averaged over 1hr",
+              "**RAM & disk usage** - current utilization",
+              "**Estimated monthly electricity cost** - calculated from live wattage × ₹6/unit",
+              "**Network I/O** - in/out KB/s over the last hour",
+              "**Session + total uptime** - since 1 Feb 2026"
+            ]},
+            { "type": "alert", "variant": "info", "title": "Power Monitoring", "text": "**scaphandre** measures actual host power draw in microwatts. Combined with the local electricity rate (₹6/unit), the dashboard shows a **live estimated monthly electricity bill** — useful for validating the cost savings vs cloud." }
+          ]
+        },
+        {
+          "id": "stats-app",
+          "title": "stats.vpjoshi.in",
+          "content": [
+            { "type": "header", "text": "stats.vpjoshi.in - Public Monitoring Dashboard" },
+            { "type": "text", "text": "A custom **Next.js 15** dashboard built because Grafana dashboards aren't publicly shareable. It queries Prometheus server-side via API routes and renders live server metrics at **stats.vpjoshi.in** — no login, no auth wall, open to anyone." },
+            { "type": "image", "src": "/images/stats/1.png", "alt": "stats.vpjoshi.in dashboard", "caption": "Live public dashboard — CPU, RAM, power draw, uptime, and network I/O updated every 10 seconds." },
+            { "type": "header2", "text": "What's on Display" },
+            { "type": "list", "items": [
+              "**CPU load, temperature, power draw** - live and 1hr average",
+              "**RAM & disk usage** - current utilization",
+              "**Estimated monthly electricity cost** - live wattage × ₹6/unit",
+              "**Network I/O** - in/out KB/s over last hour",
+              "**Session + total uptime** - tracked since 1 Feb 2026"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Built with Next.js + SWR", "text": "Refresh interval is configurable from the UI (10s → 5m). `PROMETHEUS_URL` never leaves the server — browser only talks to `/api/*` routes on the same origin." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "tech-stack",
+          "title": "Full Stack",
+          "content": [
+            { "type": "header", "text": "Full Technical Stack" },
+            { "type": "header2", "text": "Orchestration" },
+            { "type": "list", "items": [
+              "**k3s** - Lightweight Kubernetes for container orchestration.",
+              "**Docker** - All services containerized for reproducibility.",
+              "**Helm** - Package management for K8s manifests."
+            ]},
+            { "type": "header2", "text": "Services" },
+            { "type": "list", "items": [
+              "**n8n** - Self-hosted workflow automation.",
+              "**Ollama + LLaMA 3.2** - Local AI inference, zero API cost.",
+              "**PostgreSQL** - Primary relational database (StatefulSet + PVC).",
+              "**PocketBase** - Lightweight BaaS for auth, realtime, and file storage."
+            ]},
+            { "type": "header2", "text": "Monitoring" },
+            { "type": "list", "items": [
+              "**Prometheus** - Metrics collection and storage.",
+              "**node_exporter** - CPU, RAM, disk, network hardware metrics.",
+              "**scaphandre** - Live power draw in microwatts.",
+              "**Grafana** - Internal dashboards at grafana.vpjoshi.in.",
+              "**Next.js (stats.vpjoshi.in)** - Public-facing metrics dashboard."
+            ]},
+            { "type": "header2", "text": "Networking & DevOps" },
+            { "type": "list", "items": [
+              "**Cloudflare Tunnel** - Secure public exposure with no open ports.",
+              "**K8s Ingress** - Internal routing to services via subdomains.",
+              "**GitHub Actions** - CI/CD with `[prod]` commit-message deploy trigger.",
+              "**TLS** - Automatic HTTPS via Cloudflare for all public subdomains."
+            ]}
+          ]
+        },
+        {
+          "id": "networking",
+          "title": "Networking",
+          "content": [
+            { "type": "header", "text": "Networking Setup" },
+            { "type": "text", "text": "All services are exposed publicly via **Cloudflare Tunnel** — no port forwarding required on the home router. The tunnel creates a secure outbound-only connection, and Cloudflare's ingress routes subdomains to the correct K8s services." },
+            { "type": "code", "language": "yaml", "code": "# cloudflare tunnel config (simplified)\ningress:\n  - hostname: k8s-api.vpjoshi.in\n    service: https://localhost:6443\n  - hostname: stats.vpjoshi.in\n    service: http://stats-svc:3000\n  - hostname: grafana.vpjoshi.in\n    service: http://grafana-svc:3000\n  - hostname: n8n.vpjoshi.in\n    service: http://n8n-svc:5678\n  - service: http_status:404" },
+            { "type": "alert", "variant": "warning", "title": "Security Note", "text": "Grafana and n8n are protected with **application-level auth**. The K8s API is secured with kubeconfig certificates. Only `stats.vpjoshi.in` is fully public — it only reads from Prometheus and exposes no write surface." }
+          ]
+        }
+      ]
+    }
+  ]
+}

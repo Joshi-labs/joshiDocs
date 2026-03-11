@@ -1,67 +1,153 @@
 {
-  "projectTitle": "Orbit Orchestrator",
-  "version": "v0.1.0-alpha",
+  "projectTitle": "Orbit – Container Orchestrator",
+  "version": "v1.0.0",
   "sections": [
     {
       "category": "Overview",
       "items": [
         {
-          "id": "orbit-intro",
-          "title": "What is Orbit?",
+          "id": "intro",
+          "title": "Project Overview",
           "content": [
-            { "type": "header", "text": "Orbit: Distributed Container Orchestrator" },
-            { "type": "text", "text": "Orbit is a lightweight, distributed container orchestration system built in **Go**. It manages the lifecycle of containers across a cluster of worker nodes, handling scheduling, health checks, and state management." },
-            { "type": "alert", "variant": "info", "title": "Tech Stack", "text": "Built with **Go**, **Docker SDK**, and **RESTful APIs**. Uses a manager-worker architecture." },
-            { 
-              "type": "image", 
-              "src": "/images/orbit/orbit-architecture.png", 
-              "alt": "Orbit High Level Architecture", 
-              "caption": "Figure 1: The Manager-Worker Node Architecture. Click to Zoom." 
-            }
+            { "type": "header", "text": "Orbit – Lightweight Container Orchestrator" },
+            { "type": "image", "src": "/images/orbit/1.png", "alt": "Orbit Container Orchestrator", "caption": "Orbit — distribute Docker containers across a cluster of machines with no Kubernetes, no cloud." },
+            { "type": "text", "text": "**Orbit** is a from-scratch container orchestrator written in Go. Spin up a master node, join workers to it, and Orbit schedules Docker containers across the cluster — with multiple scheduling strategies, health monitoring, auto-removal of dead workers, and a Docker Compose-style deploy file." },
+            { "type": "alert", "variant": "info", "title": "Think Baby Kubernetes", "text": "Built entirely by hand in Go — stdlib only for networking and HTTP, no frameworks. Every scheduling decision, health check, and task registry update is implemented from scratch." }
           ]
         },
         {
-          "id": "quick-start",
-          "title": "Quick Start",
+          "id": "architecture",
+          "title": "Architecture",
           "content": [
-            { "type": "header", "text": "Running a Cluster" },
-            { "type": "text", "text": "To start the Orbit Manager:" },
-            { "type": "code", "language": "bash", "code": "./orbit-manager --port 5555 --scheduler round-robin" },
-            { "type": "text", "text": "To join a Worker node:" },
-            { "type": "code", "language": "bash", "code": "sudo ./orbit-worker --manager localhost:5555 --name worker-1" }
+            { "type": "header", "text": "Architecture" },
+            { "type": "code", "language": "bash", "code": "┌─────────────────────────────────────────────────┐\n│                   orbitctl                      │  ← your CLI\n└───────────────────┬─────────────────────────────┘\n                    │ HTTP\n         ┌──────────▼──────────┐\n         │    orbit-master     │  ← scheduler + task registry\n         └──┬──────────────┬───┘\n            │              │  health checks every 5s\n     ┌──────▼───┐    ┌──────▼───┐\n     │ worker 1 │    │ worker 2 │  ← each runs Docker containers\n     └──────────┘    └──────────┘" },
+            { "type": "text", "text": "The **master node** owns the scheduler and task registry. Workers register with a 512-bit join key, expose their own HTTP API, and receive container run/stop commands from the master. `orbitctl` is the CLI that talks to the master over HTTP." },
+            { "type": "alert", "variant": "info", "title": "Project Structure", "text": "`cmd/master` – scheduler + HTTP API · `cmd/worker` – Docker runner + HTTP API · `cmd/orbitctl` – CLI · `internal/common` – shared types (Task, Node, PortBinding, OrbitCompose)" }
+          ]
+        },
+        {
+          "id": "features",
+          "title": "Features",
+          "content": [
+            { "type": "header", "text": "Features" },
+            { "type": "list", "items": [
+              "**Multi-node cluster** — join as many worker machines as you want.",
+              "**3 scheduling strategies** — least-loaded, round-robin, random (per task).",
+              "**Full container config** — env vars, port bindings, memory/CPU limits, restart policies, CMD override.",
+              "**orbit-compose.yaml** — deploy multi-service stacks with replicas, like Docker Compose but distributed.",
+              "**Health monitoring** — master pings workers every 5s, auto-removes dead ones after 3 failures.",
+              "**Task registry** — tracks every container's state, worker assignment, and container ID.",
+              "**orbitctl CLI** — `run`, `stop`, `stop --all`, `ps`, `logs`, `deploy`, `nodes`, `cluster`, `gc`.",
+              "**Secure join key** — workers must present a 512-bit key to register.",
+              "**GC** — clean up exited containers across all workers in one command."
+            ]}
           ]
         }
       ]
     },
     {
-      "category": "Internals",
+      "category": "Getting Started",
       "items": [
         {
-          "id": "architecture",
-          "title": "System Design",
+          "id": "setup",
+          "title": "Setup & Installation",
           "content": [
-            { "type": "header", "text": "Core Components" },
-            { "type": "text", "text": "Orbit follows a master-slave architecture similar to Kubernetes, but simplified for educational clarity." },
-            { "type": "header2", "text": "1. The Manager (Control Plane)" },
-            { "type": "text", "text": "The brain of the operation. It exposes an API for users to submit tasks." },
-            { "type": "list", "items": [
-                "**API Server**: Receives task requests.",
-                "**Scheduler**: Decides which node gets the task (supports Round Robin & Least Loaded).",
-                "**WorkerManager**: Tracks health of registered workers."
-              ]
-            },
-            { "type": "header2", "text": "2. The Worker (Data Plane)" },
-            { "type": "text", "text": "Workers execute the actual tasks using the Docker SDK." }
+            { "type": "header", "text": "Setup & Installation" },
+            { "type": "alert", "variant": "info", "title": "Prerequisites", "text": "Go 1.21+, Docker running on worker machines, Linux (`linux/amd64`)." },
+            { "type": "header2", "text": "Build" },
+            { "type": "code", "language": "bash", "code": "make\n# builds orbit-master, orbit-worker, orbitctl into ./build/" },
+            { "type": "header2", "text": "1. Initialize the Master" },
+            { "type": "code", "language": "bash", "code": "sudo ./build/orbit-master init\n\n# Output:\n# Cluster initialized.\n#\n# Master Address : 192.168.1.10:31045\n# Join Key       : a3f9bc74...\n#\n# Run on workers:\n#   ./orbit-worker --master 192.168.1.10 --port 31045 --key a3f9bc74..." },
+            { "type": "text", "text": "Config is saved to `/etc/orbit/master.yaml`. Running `init` again prints the existing config." },
+            { "type": "header2", "text": "2. Start the Master" },
+            { "type": "code", "language": "bash", "code": "sudo ./build/orbit-master\n# [master] listening on :31045" },
+            { "type": "header2", "text": "3. Join Workers" },
+            { "type": "code", "language": "bash", "code": "# Run on each worker machine\n./build/orbit-worker --master 192.168.1.10 --port 31045 --key a3f9bc74...\n# [worker] joined cluster as worker-2484f39c (192.168.1.11)\n# [worker] listening on :27834" }
           ]
         },
         {
-          "id": "scheduling",
-          "title": "Scheduling Logic",
+          "id": "orbitctl",
+          "title": "orbitctl CLI",
           "content": [
-            { "type": "header", "text": "The Scheduler" },
-            { "type": "text", "text": "Orbit supports pluggable scheduling algorithms. The default is `RoundRobin`." },
-            { "type": "code", "language": "go", "code": "func (r *RoundRobin) SelectCandidate(nodes []Node, task Task) *Node {\n    // Simple atomic counter for distribution\n    idx := atomic.AddInt32(&r.lastWorker, 1)\n    return &nodes[int(idx) % len(nodes)]\n}" },
-            { "type": "alert", "variant": "tip", "title": "Design Choice", "text": "I chose Interfaces for the Scheduler to make it easy to swap algorithms (e.g., switch to 'Least Containers' strategy) without rewriting the core logic." }
+            { "type": "header", "text": "orbitctl CLI" },
+            { "type": "code", "language": "bash", "code": "# List all worker nodes\n./build/orbitctl nodes\n\n# List all tasks\n./build/orbitctl ps\n\n# Run a container\n./build/orbitctl run nginx:alpine --port 8080:80 --name my-nginx\n\n# Run with full options\n./build/orbitctl run alpine:latest \\\n  --name my-task \\\n  --env APP_ENV=production \\\n  --env LOG_LEVEL=info \\\n  --port 3000:3000 \\\n  --memory 256 \\\n  --cpu 0.5 \\\n  --restart always \\\n  --scheduler round-robin\n\n# Fetch logs\n./build/orbitctl logs task-abc123\n./build/orbitctl logs task-abc123 --tail 200\n\n# Stop a task\n./build/orbitctl stop task-abc123\n\n# Stop ALL running tasks\n./build/orbitctl stop --all\n\n# Show workers and their containers\n./build/orbitctl cluster\n\n# Deploy from orbit-compose.yaml\n./build/orbitctl deploy\n./build/orbitctl deploy staging.yaml\n\n# Garbage collect exited containers on all workers\n./build/orbitctl gc" }
+          ]
+        },
+        {
+          "id": "local-test",
+          "title": "Local Multi-Worker Test",
+          "content": [
+            { "type": "header", "text": "Local Multi-Worker Test" },
+            { "type": "code", "language": "bash", "code": "# Terminal 1 — master\nsudo ./build/orbit-master init\nsudo ./build/orbit-master\n\n# Terminal 2 — worker 1\n./build/orbit-worker --master 127.0.0.1 --port <PORT> --key <KEY>\n\n# Terminal 3 — worker 2\n./build/orbit-worker --master 127.0.0.1 --port <PORT> --key <KEY>\n\n# Terminal 4 — do stuff\n./build/orbitctl nodes\n./build/orbitctl deploy\n./build/orbitctl ps\n./build/orbitctl stop --all\n./build/orbitctl gc" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "scheduling",
+          "title": "Scheduling Strategies",
+          "content": [
+            { "type": "header", "text": "Scheduling Strategies" },
+            { "type": "image", "src": "/images/orbit/2.png", "alt": "Orbit Load Balancing", "caption": "Orbit distributing containers across workers using the least-loaded scheduling strategy." },
+            { "type": "list", "items": [
+              "**least-loaded** – Picks the worker with the fewest running containers. Default.",
+              "**round-robin** – Rotates through healthy workers in order.",
+              "**random** – Picks a random healthy worker."
+            ]},
+            { "type": "text", "text": "Set per-task with the `--scheduler` flag on `orbitctl run`, or per-service in `orbit-compose.yaml`." }
+          ]
+        },
+        {
+          "id": "orbit-compose",
+          "title": "orbit-compose.yaml",
+          "content": [
+            { "type": "header", "text": "orbit-compose.yaml" },
+            { "type": "text", "text": "Deploy multi-service stacks the same way you'd use Docker Compose — but distributed across the cluster. Each service supports replicas, port bindings, env vars, restart policies, CPU/memory limits, and a per-service scheduler override." },
+            { "type": "code", "language": "yaml", "code": "version: \"1\"\n\nservices:\n  web:\n    image: nginx:alpine\n    replicas: 3\n    ports:\n      - \"8080:80\"\n    env:\n      - NGINX_HOST=localhost\n    restart: unless-stopped\n    memory: 128\n    cpu: 0.5\n    scheduler: round-robin\n\n  cache:\n    image: redis:7-alpine\n    replicas: 1\n    ports:\n      - \"6379:6379\"\n    restart: always\n    memory: 256\n\n  worker:\n    image: alpine:latest\n    replicas: 5\n    cmd: [\"sh\", \"-c\", \"echo job done\"]\n    restart: no\n    scheduler: random" },
+            { "type": "code", "language": "bash", "code": "./build/orbitctl deploy\n# Deploying 3 service(s)...\n#\n# SERVICE   REPLICA   TASK ID          WORKER                    STATUS\n# web       0         task-a1b2c3...   worker-2484f39c...        ✓ running\n# web       1         task-d4e5f6...   worker-f648f2cb...        ✓ running\n# web       2         task-789abc...   worker-2484f39c...        ✓ running\n# cache     0         task-def012...   worker-f648f2cb...        ✓ running" }
+          ]
+        },
+        {
+          "id": "health",
+          "title": "Health Monitoring",
+          "content": [
+            { "type": "header", "text": "Dead Worker Handling" },
+            { "type": "text", "text": "The master health-checks every worker every **5 seconds**. After **3 consecutive failures (15s)**:" },
+            { "type": "list", "items": [
+              "The worker is removed from the cluster.",
+              "All tasks assigned to it are marked `Failed`.",
+              "New tasks will no longer be scheduled to it."
+            ]},
+            { "type": "text", "text": "If a worker comes back online and re-registers, it rejoins the cluster cleanly." },
+            { "type": "alert", "variant": "warning", "title": "No Auto-Rescheduling", "text": "Tasks on a dead worker are marked `Failed` but not automatically rescheduled — intentional design to avoid duplicate container side-effects. Re-deploy manually or via `orbitctl deploy`." }
+          ]
+        },
+        {
+          "id": "api",
+          "title": "HTTP API",
+          "content": [
+            { "type": "header", "text": "Master API" },
+            { "type": "code", "language": "bash", "code": "POST  /register-auth     # Worker registration with join key\nPOST  /run               # Submit a task (full spec)\nPOST  /submit            # Submit a task (image only)\nPOST  /stop              # Stop a task by ID\nGET   /tasks             # List all tasks\nGET   /tasks/:id         # Get a single task\nGET   /nodes             # List all workers\nGET   /cluster           # Workers + their containers\nGET   /health            # Master health + worker counts\nPOST  /deploy            # Deploy an orbit-compose.yaml\nPOST  /gc                # Trigger GC on all workers" },
+            { "type": "header2", "text": "Worker API" },
+            { "type": "code", "language": "bash", "code": "GET   /health            # Liveness check\nGET   /stats             # Running container count\nGET   /ps                # List containers\nPOST  /run               # Start a container\nPOST  /stop              # Stop a container\nPOST  /kill              # Force remove a container\nGET   /logs?id=<cid>&tail=N  # Fetch container logs\nPOST  /gc                # Clean up exited containers" },
+            { "type": "alert", "variant": "tip", "title": "Plain HTTP", "text": "The master exposes a plain HTTP API — useful for scripting or building custom tooling on top of Orbit without going through `orbitctl`." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Tech Stack" },
+            { "type": "list", "items": [
+              "**Go** – stdlib only for networking and HTTP, no frameworks.",
+              "**Docker SDK** (`github.com/docker/docker`) – container lifecycle management.",
+              "**go-connections** (`github.com/docker/go-connections`) – port binding helpers.",
+              "**yaml.v3** (`gopkg.in/yaml.v3`) – orbit-compose.yaml parsing."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Zero Framework Policy", "text": "Orbit uses Go's stdlib `net/http` for all networking — no Gin, no Echo, no gRPC. Every route handler, middleware, and JSON encoder is written by hand. The goal was to understand orchestration deeply, not abstract it away." }
           ]
         }
       ]

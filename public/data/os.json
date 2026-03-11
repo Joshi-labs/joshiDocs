@@ -1,0 +1,161 @@
+{
+  "projectTitle": "EV OS - Hartalkar Innovations Internship",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "EV Operating System - Hartalkar Innovations" },
+            { "type": "image", "src": "/images/os/Hart.jpeg", "alt": "Hartalkar Innovations", "caption": "Hartalkar Innovations Pvt. Ltd. — Jabalpur-based EV startup building next-generation electric SUVs." },
+            { "type": "text", "text": "A **custom Linux-based operating system** built from scratch for electric vehicles, developed during an internship at **Hartalkar Innovations Pvt. Ltd.** — a Jabalpur-based EV startup focused on electric SUV innovation. The OS was designed to run on embedded EV hardware, with a custom kernel, stripped-down userspace, a React-based GUI via WebView, and a Node.js telemetry server for vehicle data." },
+            { "type": "alert", "variant": "info", "title": "Company", "text": "**Hartalkar Innovations Pvt. Ltd.** is building next-generation electric SUVs with a focus on efficiency and sustainability. Website: https://www.hartalkarinnovations.com/" }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Commercial EV infotainment and control systems are either expensive licensed platforms (QNX, Android Automotive) or generic Linux distros bloated with unnecessary components. For a startup building a custom EV from the ground up, neither option is viable — the OS needs to be **lean, purpose-built, and fully owned**." },
+            { "type": "alert", "variant": "warning", "title": "Constraints", "text": "Must boot fast on embedded hardware, run a real-time GUI for the driver, stream vehicle telemetry, and stay as lightweight as possible — no desktop environment, no unnecessary kernel modules, no bloat." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "text", "text": "A **custom Arch Linux-based OS** built using Archiso — stripped of everything non-essential, with a custom-compiled kernel configured specifically for EV hardware via Kconfig. The GUI runs as a React app rendered inside a WebView, and a Node.js server handles real-time vehicle telemetry. Unity was used for 3D vehicle simulations." },
+            { "type": "header2", "text": "Key Components" },
+            { "type": "list", "items": [
+              "**Custom Linux Kernel** — configured from scratch via Kconfig, compiled specifically for target EV hardware.",
+              "**Archiso Base** — minimal Arch Linux foundation, stripped of all non-essential packages and services.",
+              "**React GUI via WebView** — driver-facing interface built in React, rendered in-process via a WebView bridge.",
+              "**Node.js Telemetry Server** — real-time vehicle data ingestion, processing, and streaming.",
+              "**Unity 3D Simulations** — vehicle simulations for testing UI interactions and telemetry visualizations.",
+              "**v1 Prototype** — initial version built on Tiny Core Linux before pivoting to Arch for flexibility and control."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Why Arch?", "text": "Tiny Core Linux (v1) was too restrictive for the GUI and telemetry requirements. **Arch Linux** via Archiso gave full control over every package, service, and kernel module — making it the right base for a production EV OS." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "kernel",
+          "title": "Custom Kernel",
+          "content": [
+            { "type": "header", "text": "Custom Linux Kernel via Kconfig" },
+            { "type": "text", "text": "The most technically demanding part of the project — configuring and compiling a **custom Linux kernel** tailored to the EV hardware. Kconfig was used to methodically enable only the required drivers, subsystems, and features — disabling everything else to minimize boot time and memory footprint." },
+            { "type": "code", "language": "bash", "code": "# Kernel configuration workflow\ncd linux-6.x.x\n\n# Start from a minimal base config\nmake allnoconfig\n\n# Open menuconfig to selectively enable required modules\nmake menuconfig\n# → Enable: required CPU arch, GPIO, I2C, CAN bus, display drivers\n# → Disable: sound, bluetooth, wifi (not needed on target hardware)\n# → Tune: preemption model, timer frequency, memory management\n\n# Compile the kernel\nmake -j$(nproc)\n\n# Install modules\nmake modules_install\n\n# Copy kernel image\ncp arch/x86/boot/bzImage /boot/vmlinuz-ev" },
+            { "type": "header2", "text": "Key Kconfig Decisions" },
+            { "type": "list", "items": [
+              "**CONFIG_PREEMPT** - Enabled for low-latency response in the driver UI.",
+              "**CONFIG_HZ=1000** - High timer frequency for responsive telemetry polling.",
+              "**CAN Bus support** - Enabled for vehicle ECU communication over CAN.",
+              "**Framebuffer drivers** - Minimal display support for the WebView GUI.",
+              "**Stripped modules** - Bluetooth, WiFi, sound, and unused filesystems all disabled."
+            ]},
+            { "type": "alert", "variant": "warning", "title": "Research Intensive", "text": "Kconfig has thousands of options. Getting a minimal kernel that still boots, drives the display, and communicates with vehicle hardware required extensive research into Linux driver subsystems, device trees, and hardware documentation." }
+          ]
+        },
+        {
+          "id": "archiso",
+          "title": "Archiso Build System",
+          "content": [
+            { "type": "header", "text": "OS Build with Archiso" },
+            { "type": "text", "text": "**Archiso** is Arch Linux's official tool for building custom bootable images. It was used as the foundation to assemble the EV OS — defining exactly which packages, configs, and services go into the final image." },
+            { "type": "code", "language": "bash", "code": "ev-os/\n├── airootfs/\n│   ├── etc/\n│   │   ├── systemd/system/     # custom systemd units\n│   │   │   ├── ev-gui.service  # starts React WebView on boot\n│   │   │   └── telemetry.service # starts Node.js telemetry server\n│   │   └── hostname            # ev-os\n│   └── usr/local/bin/\n│       └── ev-launcher         # boot entrypoint\n├── packages.x86_64             # minimal package list\n├── profiledef.sh               # image config\n└── build.sh                    # build script" },
+            { "type": "code", "language": "bash", "code": "# Build the bootable ISO\nmkarchiso -v -w /tmp/archiso-work -o /out ./ev-os/\n\n# Flash to hardware\ndd if=/out/ev-os.iso of=/dev/sdX bs=4M status=progress" },
+            { "type": "header2", "text": "Filesystem Structure" },
+            { "type": "code", "language": "bash", "code": "/\n├── boot/\n│   └── vmlinuz-ev          ← custom compiled kernel\n├── etc/\n│   └── systemd/system/\n│       ├── ev-gui.service   ← React WebView autostart\n│       └── telemetry.service← Node.js server autostart\n├── usr/\n│   ├── bin/                 ← stripped to essentials only\n│   └── local/\n│       ├── ev-gui/          ← React app bundle\n│       └── telemetry/       ← Node.js telemetry server\n├── var/\n│   └── log/telemetry/       ← vehicle data logs\n└── tmp/" },
+            { "type": "alert", "variant": "info", "title": "v1 - Tiny Core Linux", "text": "The first prototype was built on **Tiny Core Linux** — a ~16MB minimal Linux distro. It validated the WebView + React GUI concept but lacked the flexibility needed for kernel customization and telemetry. The project pivoted to Arch in v2." }
+          ]
+        },
+        {
+          "id": "gui",
+          "title": "React GUI via WebView",
+          "content": [
+            { "type": "header", "text": "Driver GUI — React + WebView" },
+            { "type": "text", "text": "The driver-facing interface is a **React application** rendered inside a native WebView — giving the performance of a native app with the flexibility of web technologies. The GUI displays real-time telemetry, vehicle status, and controls — all fed by the local Node.js telemetry server." },
+            { "type": "list", "items": [
+              "**React frontend** — component-based UI for speed, battery, temperature, and vehicle status.",
+              "**WebView bridge** — React app rendered natively, no browser chrome, no URL bar.",
+              "**Local API** — GUI fetches data from `localhost` Node.js telemetry server via REST/WebSocket.",
+              "**Auto-start on boot** — `ev-gui.service` systemd unit launches WebView immediately after kernel init."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Why WebView?", "text": "A full browser or desktop environment (X11/Wayland + Electron) would add hundreds of MBs to the image. **WebView** renders the React app directly with a minimal native wrapper — fast boot, small footprint, same dev experience." }
+          ]
+        },
+        {
+          "id": "telemetry",
+          "title": "Telemetry Server",
+          "content": [
+            { "type": "header", "text": "Node.js Telemetry Server" },
+            { "type": "text", "text": "A **Node.js server** runs on the OS to ingest, process, and stream real-time vehicle telemetry data — speed, battery state, temperature, motor RPM, and CAN bus events. The GUI subscribes to this server via WebSocket for live updates." },
+            { "type": "code", "language": "javascript", "code": "// Simplified telemetry server\nconst express = require('express');\nconst { WebSocketServer } = require('ws');\nconst can = require('socketcan');\n\nconst app = express();\nconst wss = new WebSocketServer({ port: 8080 });\n\n// CAN bus channel for vehicle ECU data\nconst channel = can.createRawChannel('can0', true);\n\nchannel.addListener('onMessage', (msg) => {\n  const telemetry = parseCANFrame(msg);\n  // Broadcast to all connected GUI clients\n  wss.clients.forEach(client => {\n    client.send(JSON.stringify(telemetry));\n  });\n});\n\nchannel.start();" },
+            { "type": "alert", "variant": "info", "title": "CAN Bus", "text": "Vehicle ECUs communicate over **CAN (Controller Area Network)** — the standard automotive protocol. The telemetry server reads raw CAN frames, decodes them into readable metrics, and streams them to the GUI in real time." }
+          ]
+        },
+        {
+          "id": "unity",
+          "title": "3D Simulations",
+          "content": [
+            { "type": "header", "text": "Unity 3D Simulations" },
+            { "type": "text", "text": "**Unity** was used to build 3D vehicle simulations for testing and demonstrating the OS — visualizing telemetry data spatially, simulating driving scenarios, and validating GUI interactions before hardware was available." },
+            { "type": "list", "items": [
+              "**Vehicle dashboard simulation** — 3D cockpit view driven by live telemetry data.",
+              "**Battery and motor state visualization** — real-time 3D representation of EV drivetrain.",
+              "**Scenario testing** — simulate edge cases (low battery, overheat alerts) without physical hardware."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Stack & Notes",
+      "items": [
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Tech Stack" },
+            { "type": "list", "items": [
+              "**Arch Linux + Archiso** - Custom bootable OS image builder.",
+              "**Linux Kernel (custom)** - Compiled from source via Kconfig for target EV hardware.",
+              "**Tiny Core Linux** - v1 prototype base (later replaced by Arch).",
+              "**React** - Driver-facing GUI.",
+              "**WebView** - Native wrapper to render React app without a full browser.",
+              "**Node.js** - Real-time vehicle telemetry server over WebSocket + CAN bus.",
+              "**Unity** - 3D vehicle simulations and dashboard prototyping.",
+              "**systemd** - Service management for auto-starting GUI and telemetry on boot.",
+              "**C / Assembly** - Low-level hardware interfacing and kernel module work."
+            ]}
+          ]
+        },
+        {
+          "id": "ip-note",
+          "title": "IP & Confidentiality",
+          "content": [
+            { "type": "header", "text": "IP & Confidentiality Note" },
+            { "type": "alert", "variant": "warning", "title": "Proprietary Work", "text": "The GUI source code and OS image are proprietary to **Hartalkar Innovations Pvt. Ltd.** and cannot be publicly shared. This documentation covers the technical architecture and decisions made during the internship. The kernel configuration, build scripts, and simulation work are described at a high level only." }
+          ]
+        },
+        {
+          "id": "certificate",
+          "title": "Internship Certificate",
+          "content": [
+            { "type": "header", "text": "Internship Completion Certificate" },
+            { "type": "image", "src": "/images/os/intern.jpeg", "alt": "Internship Completion Certificate - Hartalkar Innovations", "caption": "Internship Completion Certificate — Hartalkar Innovations Pvt. Ltd." }
+          ]
+        }
+      ]
+    }
+  ]
+}

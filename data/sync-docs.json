@@ -1,0 +1,205 @@
+{
+  "projectTitle": "SyncDocs – Collaborative Document Editor",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "SyncDocs – Real-Time Collaborative Document Editor" },
+            { "type": "image", "src": "/images/sync-docs/1.png", "alt": "SyncDocs Landing Page", "caption": "SyncDocs — real-time collaborative document editing, built for scale on AWS." },
+            { "type": "text", "text": "**SyncDocs** is a production-grade real-time collaborative document editor built for scale. Multiple users can edit the same document simultaneously with changes synced in real time using a **delta-based approach** — only the diff is transmitted and stored, not the full document on every keystroke. Race conditions between concurrent edits are resolved using an **Operational Transformation (OT) algorithm**." },
+            { "type": "alert", "variant": "info", "title": "Live Platform", "text": "Deployed and live at **sync-docs.vpjoshi.in** — running on Amazon EKS across 3 availability zones in ap-south-1." }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Building a truly scalable collaborative editor is hard. Naive implementations send the full document state on every keystroke — which doesn't scale. Concurrent edits from multiple users create race conditions that corrupt document state. WebSocket connections are stateful and hard to scale horizontally. Write ingestion and processing need to be decoupled to handle traffic spikes without dropping data." },
+            { "type": "alert", "variant": "warning", "title": "Core Challenges", "text": "**Race conditions** between concurrent edits · **Write throughput** at scale · **Stateful WebSocket** horizontal scaling · **Shared filesystem** across multi-AZ pods · **Decoupled processing** without data loss" }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "list", "items": [
+              "**Delta-based sync** — only diffs transmitted and stored, not full document state on every keystroke.",
+              "**Operational Transformation (OT)** — advanced algorithm resolves concurrent edit conflicts and race conditions.",
+              "**Kafka (AWS MSK)** — decouples write ingestion from processing, absorbs traffic spikes without data loss.",
+              "**EKS multi-AZ** — all workloads distributed across 3 AZs with topology spread constraints.",
+              "**KEDA autoscaling** — IO Processor and Analytics scale independently based on Kafka consumer lag.",
+              "**EFS shared filesystem** — ReadWriteMany PVC mounted across all AZ pods, no data locality issues.",
+              "**Serverless auth** — Lambda + DynamoDB + JWT, scales to zero between requests."
+            ]},
+            { "type": "image", "src": "/images/sync-docs/2.png", "alt": "SyncDocs Editor UI", "caption": "Multiple users editing the same document simultaneously — changes synced in real time via delta ops." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "system-arch",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "image", "src": "/images/sync-docs/system-arch.png", "alt": "SyncDocs System Architecture", "caption": "Full AWS architecture — CloudFront → EKS → MSK → IO Processor → EFS across 3 AZs." },
+            { "type": "code", "language": "bash", "code": "┌─────────────────────────────────────────────────────────────────┐\n│                        Client Browser                           │\n└──────────────────────────┬──────────────────────────────────────┘\n                           │\n              ┌────────────▼────────────┐\n              │   CloudFront (CDN)      │  ← static React SPA (S3/OAC)\n              └────────────┬────────────┘\n                           │ REST / WebSocket\n              ┌────────────▼────────────┐\n              │   API Gateway + Lambda  │  ← auth only (JWT via DynamoDB)\n              └────────────┬────────────┘\n                           │ JWT\n┌──────────────────────────▼──────────────────────────────────────┐\n│                     Amazon EKS (ap-south-1)                      │\n│                                                                  │\n│   AZ-1a              AZ-1b              AZ-1c                    │\n│  ┌──────────┐       ┌──────────┐       ┌──────────┐             │\n│  │ Node.js  │       │ Node.js  │       │ Node.js  │  ← backend  │\n│  │ API pods │       │ API pods │       │ API pods │  REST+WS    │\n│  └────┬─────┘       └────┬─────┘       └────┬─────┘             │\n│       └────────────────┬─┘─────────────────┘                    │\n│                        │ Kafka produce                          │\n│           ┌────────────▼──────────────┐                         │\n│           │      AWS MSK (Kafka)       │  ← 3 brokers, 1/AZ     │\n│           │  doc.delta.ops            │     RF=3                │\n│           │  analytics.events         │                         │\n│           └──────┬──────────┬─────────┘                         │\n│                  │          │ consume                           │\n│          ┌───────▼──┐  ┌────▼──────┐                            │\n│          │IO Processor│ │Analytics  │  ← KEDA scaled on lag     │\n│          │(consumer) │ │(consumer) │                            │\n│          └───────┬───┘  └───────────┘                           │\n│                  │ write                                        │\n│          ┌───────▼───────────────────┐                          │\n│          │  Amazon EFS (ReadWriteMany)│  ← shared across all AZs│\n│          └───────────────────────────┘                          │\n└──────────────────────────────────────────────────────────────────┘" }
+          ]
+        },
+        {
+          "id": "frontend",
+          "title": "Frontend",
+          "content": [
+            { "type": "header", "text": "Frontend – React/Vite on CloudFront + S3" },
+            { "type": "text", "text": "A **static React/Vite SPA** served entirely via CloudFront CDN. Assets are stored in S3 with **Origin Access Control (OAC)** — the bucket is fully private, only CloudFront can read from it. No origin hits for static content — everything is cached at the edge." },
+            { "type": "list", "items": [
+              "**Vite** – Fast build tooling and dev server.",
+              "**React** – Component-based collaborative editor UI.",
+              "**S3 + OAC** – Private asset storage, only accessible via CloudFront.",
+              "**CloudFront** – Global CDN, zero origin hits for static content.",
+              "**WebSocket client** – Maintains persistent connection to Node.js backend for real-time delta sync."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "OAC vs OAI", "text": "Uses **Origin Access Control (OAC)** — AWS's modern replacement for the legacy Origin Access Identity (OAI). OAC supports additional S3 operations and is the recommended approach for new CloudFront + S3 deployments." }
+          ]
+        },
+        {
+          "id": "auth",
+          "title": "Auth Layer",
+          "content": [
+            { "type": "header", "text": "Serverless Auth – Lambda + DynamoDB + JWT" },
+            { "type": "text", "text": "Auth is fully **serverless** — API Gateway receives auth requests and invokes a Lambda function which validates credentials against DynamoDB and returns a signed JWT. Stateless, no always-on auth server, scales to zero between requests." },
+            { "type": "code", "language": "javascript", "code": "// Lambda auth handler (simplified)\nexports.handler = async (event) => {\n  const { email, password } = JSON.parse(event.body);\n\n  // Validate against DynamoDB\n  const user = await dynamodb.get({\n    TableName: 'syncdocs-users',\n    Key: { email }\n  }).promise();\n\n  if (!user.Item || !bcrypt.compareSync(password, user.Item.passwordHash)) {\n    return { statusCode: 401, body: 'Unauthorized' };\n  }\n\n  // Issue JWT\n  const token = jwt.sign(\n    { userId: user.Item.id, email },\n    process.env.JWT_SECRET,\n    { expiresIn: '24h' }\n  );\n\n  return { statusCode: 200, body: JSON.stringify({ token }) };\n};" },
+            { "type": "alert", "variant": "info", "title": "Stateless JWT", "text": "The backend API pods validate JWTs locally — no calls back to Lambda or DynamoDB per request. The secret is injected via Kubernetes secrets at pod startup." }
+          ]
+        },
+        {
+          "id": "backend",
+          "title": "Backend",
+          "content": [
+            { "type": "header", "text": "Backend – Node.js on EKS" },
+            { "type": "text", "text": "The **Node.js API server** runs as pods in EKS, handling both REST and WebSocket connections. It acts as the **Kafka producer** — every document change event (delta op) gets published to MSK topics. WebSocket connections are maintained per-session for real-time bidirectional sync." },
+            { "type": "code", "language": "javascript", "code": "// Delta op handler (simplified)\nwss.on('connection', (ws, req) => {\n  const { docId, userId } = parseAuth(req);\n\n  ws.on('message', async (data) => {\n    const delta = JSON.parse(data);\n\n    // Publish delta op to Kafka\n    await producer.send({\n      topic: 'doc.delta.ops',\n      messages: [{\n        key: docId,\n        value: JSON.stringify({\n          docId,\n          userId,\n          delta,\n          timestamp: Date.now()\n        })\n      }]\n    });\n\n    // Broadcast to other clients on same doc\n    broadcastToDoc(docId, userId, delta);\n  });\n});" },
+            { "type": "alert", "variant": "info", "title": "Topology Spread", "text": "Pods use `topologySpreadConstraints` to distribute across all 3 AZs. HPA handles uneven load — AZ pod counts differ intentionally to reflect real-world asymmetric traffic patterns." }
+          ]
+        },
+        {
+          "id": "kafka",
+          "title": "Kafka – AWS MSK",
+          "content": [
+            { "type": "header", "text": "Kafka – AWS MSK" },
+            { "type": "text", "text": "**AWS MSK (Managed Streaming for Kafka)** with 3 brokers, one per AZ. Decouples write ingestion from processing — the backend publishes at any rate and consumers process at their own pace without dropping events." },
+            { "type": "list", "items": [
+              "**`doc.delta.ops`** — document change events (delta ops) from all connected clients.",
+              "**`analytics.events`** — usage events for independent analytics processing.",
+              "**Replication factor 3** — every message replicated across all 3 brokers/AZs for fault tolerance.",
+              "**MSK outside EKS** — sits inside the same VPC/region, accessible to all EKS pods via VPC routing."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Why Kafka?", "text": "Without Kafka, a traffic spike causes the backend to either drop events or overwhelm the IO Processor. **Kafka absorbs the spike** — backend publishes freely, IO Processor consumes at its own pace. Zero data loss under load." }
+          ]
+        },
+        {
+          "id": "io-processor",
+          "title": "IO Processor",
+          "content": [
+            { "type": "header", "text": "IO Processor – Delta Consumer" },
+            { "type": "text", "text": "A **Kafka consumer group** subscribed to `doc.delta.ops`. Applies the delta logic — computes and persists document state changes to EFS. Scales independently of the backend via **KEDA** based on consumer lag." },
+            { "type": "code", "language": "javascript", "code": "// IO Processor — OT-based delta application (simplified)\nconsumer.run({\n  eachMessage: async ({ message }) => {\n    const { docId, userId, delta } = JSON.parse(message.value);\n\n    // Load current document state from EFS\n    const docPath = `/efs/docs/${docId}.json`;\n    const current = await fs.readFile(docPath, 'utf8');\n    const doc = JSON.parse(current);\n\n    // Apply Operational Transformation\n    const transformed = ot.transform(delta, doc.pendingOps);\n    const newState = ot.apply(doc.content, transformed);\n\n    // Persist updated state\n    await fs.writeFile(docPath, JSON.stringify({\n      content: newState,\n      version: doc.version + 1,\n      lastModified: Date.now()\n    }));\n  }\n});" },
+            { "type": "alert", "variant": "info", "title": "KEDA Autoscaling", "text": "**KEDA** watches the `doc.delta.ops` consumer group lag. When lag grows (traffic spike), it scales IO Processor pods up automatically. When lag clears, pods scale back down — cost-efficient and responsive." }
+          ]
+        },
+        {
+          "id": "ot",
+          "title": "Operational Transformation",
+          "content": [
+            { "type": "header", "text": "Operational Transformation (OT)" },
+            { "type": "text", "text": "The core algorithm that makes collaborative editing correct. When two users edit the same position simultaneously, their changes arrive out of order at the server. Without OT, one edit silently overwrites the other — corrupting the document." },
+            { "type": "code", "language": "bash", "code": "# The race condition problem:\n\nDocument: \"Hello\"\n\nUser A: insert \" World\" at pos 5  → \"Hello World\"\nUser B: insert \"!\" at pos 5       → \"Hello!\"       (concurrent)\n\n# Naive merge (no OT): one op gets dropped or positions collide\n# With OT: B's op is transformed against A's op\n#   → B's insert position adjusted to pos 11\n#   → Final: \"Hello World!\"  ✓" },
+            { "type": "text", "text": "OT transforms each incoming operation against all concurrent operations that have already been applied — adjusting positions and intent so every user converges to the same document state regardless of network order." },
+            { "type": "alert", "variant": "tip", "title": "Delta-Based Storage", "text": "Only **diffs (delta ops)** are transmitted over WebSocket and published to Kafka — not the full document. This reduces bandwidth by orders of magnitude for large documents with many concurrent editors." }
+          ]
+        },
+        {
+          "id": "efs",
+          "title": "EFS Shared Storage",
+          "content": [
+            { "type": "header", "text": "Amazon EFS – Shared Filesystem" },
+            { "type": "text", "text": "**Amazon EFS** is mounted across all IO Processor pods in all 3 AZs via the **EFS CSI driver** with a `ReadWriteMany` PVC. Any pod in any AZ can read and write the same document files — no data locality issues, no pod-to-pod coordination needed." },
+            { "type": "code", "language": "yaml", "code": "# EFS PVC — ReadWriteMany across all AZs\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: syncdocs-efs-pvc\nspec:\n  accessModes:\n    - ReadWriteMany\n  storageClassName: efs-sc\n  resources:\n    requests:\n      storage: 10Gi" },
+            { "type": "alert", "variant": "warning", "title": "Why not S3?", "text": "S3 is eventually consistent for overwrites — not suitable for high-frequency document state updates. **EFS gives POSIX filesystem semantics** with strong consistency, making it safe for concurrent IO Processor writes." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Full Technical Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**React + Vite** – SPA collaborative editor UI.",
+              "**Tailwind CSS** – Utility-first styling.",
+              "**WebSocket client** – Real-time delta sync with backend.",
+              "**CloudFront + S3 (OAC)** – CDN-served static assets."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Node.js** – REST + WebSocket API server.",
+              "**Kafka producer (MSK)** – Publishes delta ops to `doc.delta.ops`.",
+              "**JWT validation** – Stateless auth on every request."
+            ]},
+            { "type": "header2", "text": "Auth" },
+            { "type": "list", "items": [
+              "**AWS Lambda** – Serverless auth handler.",
+              "**API Gateway** – HTTP trigger for Lambda.",
+              "**DynamoDB** – User credential storage.",
+              "**JWT** – Stateless session tokens."
+            ]},
+            { "type": "header2", "text": "Messaging & Processing" },
+            { "type": "list", "items": [
+              "**AWS MSK (Kafka)** – 3 brokers, RF=3, two topics.",
+              "**IO Processor** – Kafka consumer, applies OT, persists to EFS.",
+              "**Analytics Processor** – Kafka consumer, processes usage metrics.",
+              "**KEDA** – Autoscales consumers based on Kafka lag."
+            ]},
+            { "type": "header2", "text": "Infrastructure" },
+            { "type": "list", "items": [
+              "**Amazon EKS** – Multi-AZ Kubernetes across ap-south-1a/b/c.",
+              "**Amazon EFS** – ReadWriteMany shared filesystem via CSI driver.",
+              "**HPA** – Horizontal Pod Autoscaler for backend pods.",
+              "**topologySpreadConstraints** – Even pod distribution across AZs."
+            ]}
+          ]
+        },
+        {
+          "id": "scalability",
+          "title": "Scalability Design",
+          "content": [
+            { "type": "header", "text": "Scalability Design" },
+            { "type": "list", "items": [
+              "**Stateless backend** — JWT auth means any pod can serve any request. HPA scales pods horizontally without session stickiness issues.",
+              "**Kafka buffer** — MSK absorbs write spikes. Backend never blocks waiting for IO Processor.",
+              "**KEDA lag-based scaling** — IO Processor scales precisely to demand, not CPU/RAM proxies.",
+              "**Multi-AZ EKS** — No single AZ is a SPOF. `topologySpreadConstraints` ensures pods survive an AZ outage.",
+              "**EFS ReadWriteMany** — IO Processor pods across all AZs write to shared storage without coordination overhead.",
+              "**Delta ops** — Bandwidth and storage scale with change rate, not document size."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Zero Single Point of Failure", "text": "Every layer is multi-AZ — EKS pods, MSK brokers (RF=3), EFS, and DynamoDB. Losing any single AZ keeps SyncDocs fully operational." }
+          ]
+        }
+      ]
+    }
+  ]
+}

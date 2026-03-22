@@ -1,0 +1,235 @@
+{
+  "projectTitle": "S3 Drive - Self-Hosted File Storage",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "S3 Drive - Self-Hosted Google Drive Alternative" },
+            { "type": "image", "src": "/images/s3-drive/landing.png", "alt": "S3 Drive Landing Page", "caption": "S3 Drive — a self-hosted Google Drive alternative built on AWS S3 and Go." },
+            { "type": "text", "text": "**S3 Drive** is a full-featured file storage platform you host yourself. It gives you a Google Drive-style experience — folders, search, starring, trash, drag-and-drop uploads — backed by S3-compatible object storage and a Go backend that ships as a **single binary** with the entire React frontend embedded inside it." },
+            { "type": "text", "text": "No subscription. No per-seat pricing. No data leaving your control. Switch between AWS S3, Cloudflare R2, or self-hosted MinIO by changing two environment variables — zero code changes." },
+            { "type": "alert", "variant": "info", "title": "Live Demo", "text": "Running live at **s3-drive.vpjoshi.in** on the homelab k8s server (i3-7100, 8GB RAM). Use guest login to explore." }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Google Drive, Dropbox, and OneDrive are convenient — but they come with real tradeoffs. Your data lives on someone else's servers. Pricing scales with storage and seats. You have no control over retention, access logs, or compliance. And at scale, the cost adds up fast." },
+            { "type": "text", "text": "Self-hosted alternatives like Nextcloud solve the ownership problem but come with heavyweight stacks — PHP, Redis, databases, background workers — that are complex to deploy and maintain. There's no lightweight, developer-friendly option that you can spin up in minutes and trust in production." },
+            { "type": "alert", "variant": "warning", "title": "Core Problems", "text": "**Vendor lock-in** — your data on their servers · **Scaling cost** — per-seat or per-GB pricing · **Complexity** — existing self-hosted tools are heavyweight · **Egress fees** — AWS S3 charges per GB downloaded, adding up fast at scale" }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "text", "text": "S3 Drive is built around three principles — **simplicity** (single binary, single config file), **portability** (swap storage backends via env vars), and **cost efficiency** (presigned URLs keep egress off your server, Cloudflare R2 eliminates egress fees entirely)." },
+            { "type": "list", "items": [
+              "**Single Go binary** — embeds the React frontend via `embed.FS`. One file to deploy, one process to run.",
+              "**Presigned URLs** — file transfers go directly browser ↔ S3. The server is never in the data path.",
+              "**S3-compatible** — works with AWS S3, Cloudflare R2, or MinIO. Change two env vars to switch.",
+              "**SQLite metadata** — all file/folder structure stored locally in SQLite. No external database to manage.",
+              "**In-memory cache** — per-user, per-folder cache invalidation keeps list queries fast without a Redis dependency.",
+              "**JWT auth** — stateless, no session store. Admin and guest roles with rate limiting on all public endpoints."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Why Go?", "text": "Go compiles to a single static binary with no runtime dependencies. Combined with `embed.FS` for the frontend, the entire application — API server, static file server, background cleanup task — ships as one file. Docker image is under 30MB." }
+          ]
+        },
+        {
+          "id": "cost",
+          "title": "Cost Comparison",
+          "content": [
+            { "type": "header", "text": "Cost Comparison" },
+            { "type": "text", "text": "The cost advantage depends on your storage backend. Cloudflare R2 is the sweet spot for most users — S3-compatible API, zero egress fees, and ~55% cheaper than Google Drive at 1TB." },
+            { "type": "list", "items": [
+              "**Google Drive One** - $9.99/month for 1TB, $9.99/month for 2TB (capped)",
+              "**S3 Drive on AWS S3** - ~$23/month for 1TB (includes egress)",
+              "**S3 Drive on Cloudflare R2** - ~$4.50/month for 1TB, **zero egress fees**",
+              "**S3 Drive on self-hosted MinIO** - ~$0/month (electricity only)"
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Cloudflare R2 Advantage", "text": "AWS S3 charges ~$0.09/GB for egress. For a 1TB drive with moderate downloads, egress alone can exceed the storage cost. **Cloudflare R2 has zero egress fees** — you only pay for storage at $0.015/GB/month, making it ~50% cheaper than Google Drive with no surprise bills." }
+          ]
+        },
+        {
+          "id": "features",
+          "title": "Features",
+          "content": [
+            { "type": "header", "text": "Features" },
+            { "type": "image", "src": "/images/s3-drive/drive.png", "alt": "S3 Drive UI", "caption": "Google Drive-style UI — folders, search, starring, trash, and drag-and-drop uploads." },
+            { "type": "header2", "text": "Storage" },
+            { "type": "list", "items": [
+              "**Nested folders** up to 10 levels deep — full hierarchical structure stored in SQLite.",
+              "**Drag-and-drop multi-file uploads** with real-time progress tracking per file.",
+              "**Presigned URLs** — files transfer directly browser ↔ S3, the Go server is never in the data path.",
+              "**Soft delete** — moves files to trash with 30-day retention before permanent deletion.",
+              "**Hard delete** — immediate permanent removal from both SQLite and S3.",
+              "**Automatic cleanup** — background goroutine runs periodically to purge expired trash items."
+            ]},
+            { "type": "header2", "text": "UX" },
+            { "type": "list", "items": [
+              "**Star/unstar** files and folders for quick access.",
+              "**Full-text search** across filenames in the entire drive.",
+              "**Recent files** view — sorted by last modified timestamp.",
+              "**Light/dark theme** with automatic system preference detection via `prefers-color-scheme`.",
+              "**Mobile-responsive** — full functionality on any screen size."
+            ]},
+            { "type": "header2", "text": "Auth & Security" },
+            { "type": "list", "items": [
+              "**JWT-based auth** with 24h expiry and bcrypt password hashing.",
+              "**Admin role** — full read/write/delete access, password management.",
+              "**Guest role** — read-only access to public files, rate limited per IP.",
+              "**Rate limiting middleware** on all public and upload endpoints.",
+              "**CORS** configured per-domain — no wildcard origins in production."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "code", "language": "bash", "code": "                        ┌─────────────────────────┐\n                        │     GitHub Actions       │\n                        │  push → build → deploy   │\n                        │  kubectl rolling update  │\n                        └────────────┬────────────┘\n                                     │\n┌──────────┐   HTTPS   ┌─────────────▼────────────┐\n│ Browser  │◄─────────►│    Cloudflare Tunnel      │\n│React+Vite│           │   (no open ports)         │\n└──────────┘           └─────────────┬────────────┘\n                                     │\n                       ┌─────────────▼────────────┐\n                       │   k3s Cluster (bare metal) │\n                       │                           │\n                       │  ┌─────────────────────┐  │\n                       │  │   Traefik Ingress    │  │\n                       │  └──────────┬──────────┘  │\n                       │             │             │\n                       │  ┌──────────▼──────────┐  │\n                       │  │  Go Binary (1 pod)  │  │\n                       │  │                     │  │\n                       │  │  ┌───────┐ ┌──────┐ │  │\n                       │  │  │  JWT  │ │Files │ │  │\n                       │  │  │  Auth │ │Upload│ │  │\n                       │  │  └───────┘ │Search│ │  │\n                       │  │            │Trash │ │  │\n                       │  │  ┌───────┐ └──────┘ │  │\n                       │  │  │SQLite │ ┌──────┐ │  │\n                       │  │  │ GORM  │ │Cache │ │  │\n                       │  │  └───────┘ └──────┘ │  │\n                       │  │  ┌──────────────────┐│  │\n                       │  │  │  Rate Limiter    ││  │\n                       │  │  │  Cleanup Worker  ││  │\n                       │  │  └──────────────────┘│  │\n                       │  └─────────────────────┘  │\n                       └─────────────┬────────────┘\n              ┌──────────────────────┼───────────────────────┐\n              ▼                      ▼                       ▼\n       ┌──────────┐        ┌──────────────┐          ┌──────────┐\n       │  AWS S3  │        │Cloudflare R2 │          │  MinIO   │\n       └──────────┘        └──────────────┘          └──────────┘" },
+            { "type": "text", "text": "The architecture is intentionally minimal — one pod, one binary, one SQLite file, one S3 bucket. No microservices, no message queues, no external cache. Everything a personal or small-team drive needs runs in a single process." },
+            { "type": "alert", "variant": "info", "title": "Single Binary Deploy", "text": "The Go binary embeds the entire built React frontend via `embed.FS` — one binary serves both the REST API and the static frontend. No nginx, no separate static server, no reverse proxy inside the container. The Docker image is under 30MB." }
+          ]
+        },
+        {
+          "id": "backend",
+          "title": "Go Backend Internals",
+          "content": [
+            { "type": "header", "text": "Go Backend Internals" },
+            { "type": "text", "text": "The backend is written in **Go** using only `net/http` — no framework, no router library. Every route, middleware chain, and handler is wired by hand. This keeps the binary small, dependencies minimal, and behaviour fully predictable." },
+            { "type": "code", "language": "bash", "code": "s3drive/\n├── main.go                  # HTTP server, route registration, middleware chain\n├── internal/\n│   ├── database/\n│   │   ├── models.go        # GORM models: File, Folder, User\n│   │   ├── queries.go       # All DB queries (list, search, trash, star)\n│   │   └── cache.go         # In-memory cache, per-user invalidation\n│   ├── storage/\n│   │   ├── client.go        # S3 client init (AWS SDK v2)\n│   │   └── presign.go       # Presigned PUT/GET URL generation\n│   └── middleware/\n│       ├── ratelimit.go     # Token bucket rate limiter per IP\n│       └── cleanup.go       # Background trash cleanup goroutine\n├── frontend/\n│   ├── src/\n│   │   ├── pages/           # DriveView, LoginPage, LandingPage\n│   │   ├── components/      # DriveItems, Navbar, Sidebar, UploadZone\n│   │   ├── hooks/           # useDrive — full API abstraction layer\n│   │   └── context/         # ThemeContext (light/dark)\n│   └── dist/                # Built by Vite, embedded via embed.FS\n├── .github/workflows/\n│   └── deploy.yml           # GitHub Actions CI/CD\n└── Dockerfile" },
+            { "type": "header2", "text": "embed.FS — Frontend in the Binary" },
+            { "type": "code", "language": "go", "code": "//go:embed frontend/dist\nvar frontendFS embed.FS\n\nfunc main() {\n    // Serve React SPA from embedded FS\n    frontend, _ := fs.Sub(frontendFS, \"frontend/dist\")\n    http.Handle(\"/\", http.FileServer(http.FS(frontend)))\n\n    // API routes\n    http.HandleFunc(\"/api/login\", authMiddleware(handleLogin))\n    http.HandleFunc(\"/api/files\", authMiddleware(handleListFiles))\n    http.HandleFunc(\"/api/upload-init\", authMiddleware(handleUploadInit))\n    // ...\n\n    http.ListenAndServe(\":80\", nil)\n}" },
+            { "type": "header2", "text": "Presigned URL Flow" },
+            { "type": "text", "text": "All file transfers use **presigned S3 URLs** — the Go server generates a time-limited signed URL and returns it to the client. The client uploads or downloads directly to/from S3. The server is never in the file transfer path — large files don't consume server memory or bandwidth." },
+            { "type": "code", "language": "go", "code": "// Upload flow\n// 1. Client POST /api/upload-init → server generates presigned PUT URL\nfunc handleUploadInit(w http.ResponseWriter, r *http.Request) {\n    key := generateS3Key(userID, filename)\n\n    presignClient := s3.NewPresignClient(s3Client)\n    req, _ := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{\n        Bucket: &bucket,\n        Key:    &key,\n    }, s3.WithPresignExpires(15*time.Minute))\n\n    json.NewEncoder(w).Encode(map[string]string{\n        \"uploadUrl\": req.URL,\n        \"key\":       key,\n    })\n}\n\n// 2. Client PUT directly to S3 using the presigned URL (server not involved)\n// 3. Client POST /api/upload-finalize → server records metadata in SQLite\nfunc handleUploadFinalize(w http.ResponseWriter, r *http.Request) {\n    // Save file record to SQLite\n    db.Create(&File{\n        Name:     filename,\n        S3Key:    key,\n        ParentID: parentID,\n        UserID:   userID,\n        Size:     size,\n    })\n    cache.InvalidateFolder(userID, parentID)\n}" }
+          ]
+        },
+        {
+          "id": "cache",
+          "title": "Cache Layer & Rate Limiting",
+          "content": [
+            { "type": "header", "text": "In-Memory Cache & Rate Limiting" },
+            { "type": "header2", "text": "Cache Layer" },
+            { "type": "text", "text": "An **in-memory cache** sits in front of all folder list queries. Cache keys are scoped per-user and per-folder — so an upload or delete only invalidates the affected folder's cache, not the entire drive. No Redis dependency — the cache lives in the Go process." },
+            { "type": "code", "language": "go", "code": "// Cache key: userID:folderID\n// Invalidation: targeted per folder, not global flush\n\ntype Cache struct {\n    mu    sync.RWMutex\n    store map[string]CacheEntry\n}\n\nfunc (c *Cache) Get(userID, folderID string) ([]File, bool) {\n    c.mu.RLock()\n    defer c.mu.RUnlock()\n    key := userID + \":\" + folderID\n    entry, ok := c.store[key]\n    if !ok || time.Now().After(entry.ExpiresAt) {\n        return nil, false\n    }\n    return entry.Files, true\n}\n\nfunc (c *Cache) InvalidateFolder(userID, folderID string) {\n    c.mu.Lock()\n    defer c.mu.Unlock()\n    delete(c.store, userID+\":\"+folderID)\n}" },
+            { "type": "header2", "text": "Rate Limiting" },
+            { "type": "text", "text": "A **token bucket rate limiter** runs as middleware on all public and upload endpoints. Each IP gets its own bucket — requests consume tokens, tokens refill at a fixed rate. Guest endpoints have stricter limits than authenticated ones." },
+            { "type": "code", "language": "go", "code": "// Rate limiter middleware — token bucket per IP\nfunc rateLimitMiddleware(next http.HandlerFunc, rps int) http.HandlerFunc {\n    limiters := sync.Map{}\n\n    return func(w http.ResponseWriter, r *http.Request) {\n        ip := r.RemoteAddr\n        limiter, _ := limiters.LoadOrStore(ip,\n            rate.NewLimiter(rate.Limit(rps), rps*2))\n\n        if !limiter.(*rate.Limiter).Allow() {\n            http.Error(w, \"Too Many Requests\", http.StatusTooManyRequests)\n            return\n        }\n        next(w, r)\n    }\n}" },
+            { "type": "header2", "text": "Background Cleanup Worker" },
+            { "type": "text", "text": "A background goroutine runs on a ticker to permanently delete files that have been in the trash for more than 30 days — removing both the SQLite record and the S3 object." },
+            { "type": "code", "language": "go", "code": "// Cleanup worker — runs every hour\nfunc startCleanupWorker(db *gorm.DB, s3Client *s3.Client) {\n    ticker := time.NewTicker(1 * time.Hour)\n    go func() {\n        for range ticker.C {\n            var expired []File\n            cutoff := time.Now().Add(-30 * 24 * time.Hour)\n            db.Where(\"deleted_at < ? AND trashed = true\", cutoff).Find(&expired)\n\n            for _, f := range expired {\n                // Delete from S3\n                s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{\n                    Bucket: &bucket,\n                    Key:    &f.S3Key,\n                })\n                // Delete from SQLite\n                db.Delete(&f)\n            }\n        }\n    }()\n}" }
+          ]
+        },
+        {
+          "id": "auth",
+          "title": "Auth Flow",
+          "content": [
+            { "type": "header", "text": "Auth Flow - JWT + bcrypt" },
+            { "type": "text", "text": "Auth is fully **stateless** — no session store, no Redis, no database lookup on every request. The client exchanges credentials for a JWT, which is validated locally on every subsequent request by checking the signature against the `JWT_SECRET` env var." },
+            { "type": "code", "language": "bash", "code": "# Auth flow\n\n1. Client POST /api/login { email, password }\n       │\n       ▼\n2. Go handler: bcrypt.CompareHashAndPassword(stored_hash, password)\n       │\n       ├── mismatch → 401 Unauthorized\n       │\n       └── match → jwt.Sign({ userId, role, exp: now+24h }, JWT_SECRET)\n                       │\n                       ▼\n3. Client stores JWT in localStorage\n       │\n       ▼\n4. Every API request: Authorization: Bearer <token>\n       │\n       ▼\n5. authMiddleware: jwt.Verify(token, JWT_SECRET)\n       │\n       ├── invalid/expired → 401\n       │\n       └── valid → extract userId + role → pass to handler" },
+            { "type": "code", "language": "go", "code": "// Auth middleware\nfunc authMiddleware(next http.HandlerFunc) http.HandlerFunc {\n    return func(w http.ResponseWriter, r *http.Request) {\n        token := strings.TrimPrefix(r.Header.Get(\"Authorization\"), \"Bearer \")\n\n        claims, err := jwt.ParseWithClaims(token, &Claims{},\n            func(t *jwt.Token) (interface{}, error) {\n                return []byte(os.Getenv(\"JWT_SECRET\")), nil\n            })\n\n        if err != nil || !claims.Valid {\n            http.Error(w, \"Unauthorized\", http.StatusUnauthorized)\n            return\n        }\n\n        // Inject user context\n        ctx := context.WithValue(r.Context(), \"user\", claims.Claims)\n        next(w, r.WithContext(ctx))\n    }\n}" },
+            { "type": "alert", "variant": "info", "title": "Guest Role", "text": "Guest login issues a JWT with `role: guest` — the same middleware validates it, but handlers check the role before allowing write operations. Guests can browse and download public files only, with stricter rate limits applied." }
+          ]
+        },
+        {
+          "id": "storage-backends",
+          "title": "Storage Backends",
+          "content": [
+            { "type": "header", "text": "S3-Compatible Storage Backends" },
+            { "type": "text", "text": "The Go storage layer uses **AWS SDK v2** which speaks the S3 protocol. Since R2 and MinIO are both S3-compatible, switching backends is purely a configuration change — no code changes, no recompile." },
+            { "type": "code", "language": "go", "code": "// Storage client init — reads from env vars at startup\nfunc NewS3Client() *s3.Client {\n    cfg, _ := config.LoadDefaultConfig(ctx,\n        config.WithRegion(os.Getenv(\"S3_REGION\")),\n        config.WithCredentialsProvider(\n            credentials.NewStaticCredentialsProvider(\n                os.Getenv(\"AWS_ACCESS_KEY_ID\"),\n                os.Getenv(\"AWS_SECRET_ACCESS_KEY\"),\n                \"\",\n            ),\n        ),\n    )\n\n    return s3.NewFromConfig(cfg, func(o *s3.Options) {\n        // Override endpoint for R2 or MinIO\n        if endpoint := os.Getenv(\"S3_ENDPOINT\"); endpoint != \"\" {\n            o.BaseEndpoint = aws.String(endpoint)\n            o.UsePathStyle = true // required for MinIO\n        }\n    })\n}" },
+            { "type": "code", "language": "bash", "code": "# AWS S3\nS3_ENDPOINT=https://s3.amazonaws.com\nS3_REGION=ap-south-1\n\n# Cloudflare R2 (zero egress fees — recommended)\nS3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com\nS3_REGION=auto\n\n# MinIO (fully self-hosted, ~$0/month)\nS3_ENDPOINT=http://your-minio-server:9000\nS3_REGION=us-east-1" },
+            { "type": "alert", "variant": "tip", "title": "Recommended: Cloudflare R2", "text": "R2 has **zero egress fees** — unlike AWS S3 which charges ~$0.09/GB downloaded. For a personal drive with frequent downloads, R2 is significantly cheaper at scale. At 1TB storage with moderate usage, R2 costs ~$4.50/month vs $23+ on S3." }
+          ]
+        },
+        {
+          "id": "cicd",
+          "title": "CI/CD Pipeline",
+          "content": [
+            { "type": "header", "text": "CI/CD Pipeline" },
+            { "type": "text", "text": "Every push to `main` triggers a GitHub Actions pipeline. It builds the React frontend, embeds it into the Go binary, builds a Docker image, pushes to GitHub Container Registry, and performs a rolling deploy to the k3s cluster — all without touching the server manually." },
+            { "type": "code", "language": "yaml", "code": "# .github/workflows/deploy.yml\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Build frontend\n        run: cd frontend && npm ci && npm run build\n\n      - name: Build Go binary (embeds frontend)\n        run: go build -o s3drive .\n\n      - name: Build & push Docker image\n        run: |\n          docker build -t ghcr.io/${{ github.repository }}:${{ github.sha }} .\n          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}\n\n      - name: Deploy to k3s\n        run: |\n          kubectl set image deployment/s3drive \\\n            s3drive=ghcr.io/${{ github.repository }}:${{ github.sha }}\n          kubectl rollout status deployment/s3drive --timeout=120s" },
+            { "type": "header2", "text": "Rolling Update Flow" },
+            { "type": "code", "language": "bash", "code": "git push origin main\n    │\n    ▼\nGitHub Actions triggered\n    │\n    ├── npm ci && npm run build      (React frontend)\n    ├── go build -o s3drive .        (embeds frontend via embed.FS)\n    ├── docker build + push to GHCR\n    │\n    └── kubectl set image → rolling update\n            │\n            ├── New pod starts, pulls image from GHCR\n            ├── Health check passes\n            ├── Old pod terminated\n            └── Zero downtime ✓" },
+            { "type": "alert", "variant": "info", "title": "Zero Downtime", "text": "K8s rolling updates replace pods one at a time — the old pod stays live until the new one passes readiness checks. If the new image fails to start, the rollout is automatically halted and the old pod remains serving traffic." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "api",
+          "title": "API Reference",
+          "content": [
+            { "type": "header", "text": "API Reference" },
+            { "type": "header2", "text": "Auth" },
+            { "type": "code", "language": "bash", "code": "POST   /api/login                  # Admin login → JWT\nPOST   /api/guest-login            # Guest login → JWT (read-only)" },
+            { "type": "header2", "text": "Files & Folders" },
+            { "type": "code", "language": "bash", "code": "GET    /api/files?parentId=        # List folder contents (cached)\nPOST   /api/folders                # Create a new folder\nGET    /api/search?q=              # Full-text filename search\nGET    /api/recents                # Recently modified files\nGET    /api/starred                # Starred files and folders\nPOST   /api/star-toggle            # Toggle star on file/folder" },
+            { "type": "header2", "text": "Upload (Presigned)" },
+            { "type": "code", "language": "bash", "code": "POST   /api/upload-init            # Get presigned S3 PUT URL (15min expiry)\n                                   # Client uploads directly to S3\nPOST   /api/upload-finalize        # Record metadata in SQLite, invalidate cache" },
+            { "type": "header2", "text": "Download" },
+            { "type": "code", "language": "bash", "code": "GET    /api/download?id=           # Get presigned S3 GET URL (15min expiry)\n                                   # Client downloads directly from S3" },
+            { "type": "header2", "text": "Trash" },
+            { "type": "code", "language": "bash", "code": "POST   /api/soft-delete            # Move to trash (30-day retention)\nPOST   /api/restore                # Restore from trash\nDELETE /api/delete?id=             # Permanently delete (S3 + SQLite)\nGET    /api/trash                  # List trashed files" },
+            { "type": "header2", "text": "Admin" },
+            { "type": "code", "language": "bash", "code": "POST   /api/admin/update-password  # Change admin password (admin role only)" },
+            { "type": "alert", "variant": "info", "title": "All routes JWT-protected", "text": "Every `/api/*` route except `/api/login` and `/api/guest-login` requires a valid JWT in the `Authorization: Bearer` header. Guest JWTs are accepted on read endpoints but rejected on all write operations." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Tech Stack" },
+            { "type": "header2", "text": "Frontend" },
+            { "type": "list", "items": [
+              "**React 19** - Component-based Drive UI.",
+              "**Vite** - Fast build tooling, output embedded into Go binary via `embed.FS`.",
+              "**Tailwind CSS v4** - Utility-first styling with dark mode support.",
+              "**useDrive hook** - Full API abstraction layer, all fetch logic in one place."
+            ]},
+            { "type": "header2", "text": "Backend" },
+            { "type": "list", "items": [
+              "**Go (`net/http`)** - HTTP server, no framework, no router library.",
+              "**SQLite (GORM)** - File and folder metadata storage.",
+              "**AWS SDK v2** - S3-compatible client for upload, download, delete, presign.",
+              "**`golang-jwt/jwt`** - JWT generation and validation.",
+              "**bcrypt** - Password hashing for admin credentials.",
+              "**`embed.FS`** - Embeds built React frontend into the Go binary at compile time."
+            ]},
+            { "type": "header2", "text": "Infrastructure" },
+            { "type": "list", "items": [
+              "**k3s** - Lightweight Kubernetes on bare metal homelab.",
+              "**Traefik** - Ingress controller, TLS termination.",
+              "**Cloudflare Tunnel** - Secure public exposure, no open ports.",
+              "**GitHub Actions** - CI/CD pipeline, rolling deploys to k3s.",
+              "**GHCR** - GitHub Container Registry for Docker images."
+            ]},
+            { "type": "header2", "text": "Self-Hosting" },
+            { "type": "code", "language": "bash", "code": "# Run with Docker (recommended)\ndocker run -d \\\n  --name s3drive \\\n  -p 80:80 \\\n  -v $(pwd)/drive.db:/app/drive.db \\\n  --env-file .env \\\n  ghcr.io/joshi-labs/s3drive:latest\n\n# Run locally\ncd frontend && npm install && npm run build && cd ..\ngo run ." },
+            { "type": "code", "language": "bash", "code": "# .env\nS3_ENDPOINT=https://s3.amazonaws.com\nS3_BUCKET=your-bucket-name\nS3_REGION=ap-south-1\nAWS_ACCESS_KEY_ID=your-key\nAWS_SECRET_ACCESS_KEY=your-secret\nJWT_SECRET=replace-with-a-long-random-string\nDB_PATH=./drive.db" }
+          ]
+        }
+      ]
+    }
+  ]
+}

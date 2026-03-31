@@ -1,0 +1,178 @@
+{
+  "projectTitle": "CI/CD Pipeline - Self-Hosted K8s",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "CI/CD Pipeline on Self-Hosted Kubernetes" },
+            { "type": "text", "text": "A **production-grade CI/CD pipeline** built on GitHub Actions, deploying to a self-hosted k3s Kubernetes cluster at `k8s-api.vpjoshi.in`. Every project in the homelab ecosystem — Stats App, S3 Drive, SyncDocs, JoshiOTT, Portfolio, and homelab services — is deployed through the same battle-tested pipeline pattern." },
+            { "type": "text", "text": "The trigger is intentionally simple — include `[prod]` in a commit message and GitHub Actions takes it from there. Build the Docker image, push to GitHub Container Registry, connect to the self-hosted K8s cluster, apply manifests, and do a rolling restart. Zero manual SSH, zero downtime." },
+            { "type": "alert", "variant": "info", "title": "Live Pipeline", "text": "Stats App GitHub Actions runs are visible at **https://github.com/Joshi-labs/stats/actions** — every `[prod]` deploy is logged there with full build and deploy output." }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Running a self-hosted Kubernetes cluster is only half the problem. Deploying to it manually — SSH into the server, pull the latest code, rebuild the Docker image, push, update the K8s deployment — is slow, error-prone, and doesn't scale across multiple projects." },
+            { "type": "text", "text": "Managed CI/CD services like Vercel, Railway, or Render only work with their own infrastructure. For a self-hosted k3s cluster on a home server, you need a pipeline that can reach the K8s API securely from GitHub's runners — without exposing the cluster publicly in an insecure way." },
+            { "type": "alert", "variant": "warning", "title": "Core Challenges", "text": "**Secure K8s API access** from GitHub runners · **No accidental deploys** on every push · **Multi-project pipeline** without duplicating workflow files · **Zero downtime** rolling updates on a single-node homelab cluster · **GHCR auth** for private container images" }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "list", "items": [
+              "**`[prod]` commit trigger** — only commits containing `[prod]` in the message trigger a deploy. Regular pushes run lint/type-check only. Prevents accidental deploys during active development.",
+              "**GHCR (GitHub Container Registry)** — Docker images pushed to `ghcr.io/joshi-labs/<project>:latest`. Free for public repos, authenticated via `GITHUB_TOKEN` — no external registry needed.",
+              "**`ci-user` service account** — a dedicated K8s service account with a permanent token scoped to the `apps-prod` namespace. GitHub Actions authenticates to the cluster using this token via a kubeconfig built at runtime.",
+              "**k8s-api.vpjoshi.in** — the K8s API server is exposed publicly via Cloudflare Tunnel, so GitHub's runners can reach it without VPN or SSH tunneling.",
+              "**Rolling restart** — `kubectl rollout restart` triggers a rolling update. The cluster pulls the new image and replaces pods one at a time — zero downtime even on a single-node setup.",
+              "**`kubectl rollout status`** — the pipeline blocks until the rollout completes. If the new pod fails health checks, the pipeline fails and the old pod stays live."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "Pipeline Architecture",
+          "content": [
+            { "type": "header", "text": "Pipeline Architecture" },
+            { "type": "code", "language": "bash", "code": "Developer Machine\n       │\n       │  git commit -m \"feat: update metric card [prod]\"\n       │  git push origin main\n       │\n       ▼\n┌─────────────────────────────────────────────────┐\n│              GitHub (Joshi-labs org)             │\n│                                                 │\n│  push event → check commit message             │\n│       │                                         │\n│       ├── contains [prod]?                      │\n│       │       │                                 │\n│       │       yes                               │\n│       │       ▼                                 │\n│  ┌────────────────────────────────────────┐     │\n│  │         GitHub Actions Runner          │     │\n│  │         (ubuntu-latest)                │     │\n│  │                                        │     │\n│  │  1. checkout code                      │     │\n│  │  2. docker buildx setup                │     │\n│  │  3. login to GHCR                      │     │\n│  │  4. build + push image                 │     │\n│  │     ghcr.io/joshi-labs/<app>:latest    │     │\n│  │  5. install kubectl                    │     │\n│  │  6. build kubeconfig from secrets      │     │\n│  │  7. kubectl apply -f k8s/              │     │\n│  │  8. kubectl rollout restart            │     │\n│  │  9. kubectl rollout status (block)     │     │\n│  └────────────────┬───────────────────────┘     │\n│                   │ HTTPS (K8S_TOKEN)            │\n└───────────────────┼─────────────────────────────┘\n                    │\n                    ▼\n        k8s-api.vpjoshi.in\n        (Cloudflare Tunnel → K8s API)\n                    │\n                    ▼\n┌───────────────────────────────────────┐\n│     k3s Cluster (homelab server)      │\n│                                       │\n│  apps-prod namespace                  │\n│  ┌─────────────────────────────────┐  │\n│  │  deployment/<app>               │  │\n│  │  → pull new image from GHCR     │  │\n│  │  → rolling restart (0 downtime) │  │\n│  │  → health check passes          │  │\n│  │  → old pod terminated           │  │\n│  └─────────────────────────────────┘  │\n└───────────────────────────────────────┘" },
+            { "type": "alert", "variant": "info", "title": "K8s API via Cloudflare Tunnel", "text": "The K8s API server is exposed at `k8s-api.vpjoshi.in` via Cloudflare Tunnel — no open ports on the home router, no VPN needed. GitHub Actions runners reach the cluster over HTTPS using the `ci-user` service account token stored as a GitHub secret." }
+          ]
+        },
+        {
+          "id": "workflow",
+          "title": "Workflow File",
+          "content": [
+            { "type": "header", "text": "GitHub Actions Workflow" },
+            { "type": "text", "text": "Every project uses the same core workflow pattern — only the image name, deployment name, and namespace differ. Here's the Stats App workflow in full:" },
+            { "type": "code", "language": "yaml", "code": "# .github/workflows/deploy.yml\nname: Build and Deploy Stats App\n\non:\n  push:\n    branches:\n      - main\n      - master\n\njobs:\n  deploy:\n    if: contains(github.event.head_commit.message, '[prod]')\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      packages: write\n    env:\n      IMAGE: ghcr.io/joshi-labs/stats:latest\n      NAMESPACE: apps-prod\n\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n\n      - name: Set up Docker Buildx\n        uses: docker/setup-buildx-action@v3\n\n      - name: Login to GHCR\n        uses: docker/login-action@v3\n        with:\n          registry: ghcr.io\n          username: ${{ github.repository_owner }}\n          password: ${{ secrets.GITHUB_TOKEN }}\n\n      - name: Build and push image\n        uses: docker/build-push-action@v5\n        with:\n          context: .\n          push: true\n          tags: ${{ env.IMAGE }}\n\n      - name: Install kubectl\n        run: |\n          KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)\n          curl -L -o kubectl https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl\n          chmod +x kubectl && sudo mv kubectl /usr/local/bin/kubectl\n\n      - name: Configure kubeconfig\n        run: |\n          mkdir -p ~/.kube\n          cat <<EOF > ~/.kube/config\n          apiVersion: v1\n          kind: Config\n          clusters:\n          - name: k3s\n            cluster:\n              server: ${K8S_API_URL}\n              insecure-skip-tls-verify: true\n          users:\n          - name: ci-user\n            user:\n              token: ${K8S_TOKEN}\n          contexts:\n          - name: ci\n            context:\n              cluster: k3s\n              user: ci-user\n              namespace: ${NAMESPACE}\n          current-context: ci\n          EOF\n        env:\n          K8S_API_URL: ${{ secrets.K8S_API_URL }}\n          K8S_TOKEN: ${{ secrets.K8S_TOKEN }}\n\n      - name: Deploy to Kubernetes\n        run: |\n          kubectl apply -f k8s/ --validate=false\n          kubectl rollout restart deployment stats-app -n ${NAMESPACE}\n          kubectl rollout status deployment stats-app -n ${NAMESPACE}" },
+            { "type": "alert", "variant": "tip", "title": "Why --validate=false?", "text": "`--validate=false` skips server-side schema validation on `kubectl apply` — necessary because the GitHub runner's kubectl version may differ from the cluster version, causing false validation failures on perfectly valid manifests." }
+          ]
+        },
+        {
+          "id": "ci-user",
+          "title": "CI Service Account",
+          "content": [
+            { "type": "header", "text": "ci-user - K8s Service Account" },
+            { "type": "text", "text": "A dedicated **`ci-user` service account** was created in the `apps-prod` namespace with a **permanent token** and scoped RBAC permissions. It can apply manifests and manage deployments in `apps-prod` only — it cannot touch other namespaces, cluster resources, or secrets." },
+            { "type": "code", "language": "yaml", "code": "# ci-user service account + permanent token\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: ci-user\n  namespace: apps-prod\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ci-user-token\n  namespace: apps-prod\n  annotations:\n    kubernetes.io/service-account.name: ci-user\ntype: kubernetes.io/service-account-token\n---\n# RBAC — scoped to apps-prod namespace only\napiVersion: rbac.authorization.k8s.io/v1\nkind: Role\nmetadata:\n  name: ci-deployer\n  namespace: apps-prod\nrules:\n  - apiGroups: [\"apps\"]\n    resources: [\"deployments\"]\n    verbs: [\"get\", \"list\", \"apply\", \"patch\", \"update\"]\n  - apiGroups: [\"\"]\n    resources: [\"services\", \"configmaps\"]\n    verbs: [\"get\", \"list\", \"apply\", \"patch\"]\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: ci-deployer-binding\n  namespace: apps-prod\nsubjects:\n  - kind: ServiceAccount\n    name: ci-user\n    namespace: apps-prod\nroleRef:\n  kind: Role\n  name: ci-deployer\n  apiGroup: rbac.authorization.k8s.io" },
+            { "type": "alert", "variant": "warning", "title": "Least Privilege", "text": "The `ci-user` token is stored as a **GitHub Actions secret** (`K8S_TOKEN`). It has no cluster-admin privileges — scoped to `apps-prod` namespace only. Even if the token were compromised, an attacker could only interact with deployments in that one namespace." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Projects",
+      "items": [
+        {
+          "id": "screenshot",
+          "title": "Pipeline in Action",
+          "content": [
+            { "type": "header", "text": "Pipeline in Action" },
+            { "type": "image", "src": "/images/cicd/1.png", "alt": "GitHub Actions CI/CD run", "caption": "Stats App — live deploy via GitHub Actions. Code pushed with [prod] → image built → deployed to k3s in under 2 minutes." },
+            { "type": "alert", "variant": "info", "title": "Live Action Runs", "text": "Every Stats App deploy is logged at **https://github.com/Joshi-labs/stats/actions** — full build output, timing, and rollout status for every `[prod]` commit." }
+          ]
+        },
+        {
+          "id": "projects-overview",
+          "title": "Projects Using This Pipeline",
+          "content": [
+            { "type": "header", "text": "Projects Deployed via This Pipeline" },
+            { "type": "text", "text": "Every project in the homelab ecosystem uses the same `[prod]` commit trigger pattern — only the image name, deployment name, and K8s manifest differ. Here's what's running through the pipeline:" },
+            { "type": "header2", "text": "Stats App (stats.vpjoshi.in)" },
+            { "type": "text", "text": "Next.js 15 public monitoring dashboard querying Prometheus. Deployed to `apps-prod` namespace. The reference implementation for the pipeline — the workflow above is exactly what runs for this project." },
+            { "type": "code", "language": "bash", "code": "IMAGE:      ghcr.io/joshi-labs/stats:latest\nDEPLOYMENT: stats-app\nNAMESPACE:  apps-prod\nTRIGGER:    [prod] commit on main" },
+            { "type": "header2", "text": "S3 Drive (s3-drive.vpjoshi.in)" },
+            { "type": "text", "text": "Self-hosted Google Drive alternative — Go binary with embedded React frontend. Single pod deployment. The Go binary + React frontend build happens inside the Docker build, so the GitHub runner just needs to run `docker build`." },
+            { "type": "code", "language": "bash", "code": "IMAGE:      ghcr.io/joshi-labs/s3drive:latest\nDEPLOYMENT: s3drive\nNAMESPACE:  apps-prod\nBUILD:      npm run build inside Dockerfile → go build (embeds frontend)" },
+            { "type": "header2", "text": "SyncDocs (sync-docs.vpjoshi.in)" },
+            { "type": "text", "text": "Real-time collaborative document editor on AWS EKS — the pipeline here targets AWS EKS instead of the homelab k3s cluster. Uses the same `[prod]` trigger but `kubectl` is configured against the EKS endpoint." },
+            { "type": "code", "language": "bash", "code": "IMAGE:      ghcr.io/joshi-labs/syncdocs:latest\nDEPLOYMENT: syncdocs-backend\nCLUSTER:    AWS EKS (ap-south-1)\nTRIGGER:    [prod] commit on main" },
+            { "type": "header2", "text": "JoshiOTT (ott.vpjoshi.in)" },
+            { "type": "text", "text": "Netflix-style OTT streaming platform. Docker Compose on AWS EC2 — the pipeline SSHes into the EC2 instance, pulls the new image, and runs `docker compose up -d` instead of kubectl." },
+            { "type": "code", "language": "bash", "code": "IMAGE:      ghcr.io/joshi-labs/joshiott:latest\nDEPLOYMENT: docker compose on EC2\nTRIGGER:    [prod] commit on main" },
+            { "type": "header2", "text": "Portfolio (vpjoshi.in)" },
+            { "type": "text", "text": "Node.js + React portfolio site running as a Docker container on the homelab. Deployed to k3s via the same pipeline pattern as Stats App." },
+            { "type": "code", "language": "bash", "code": "IMAGE:      ghcr.io/joshi-labs/portfolio:latest\nDEPLOYMENT: portfolio\nNAMESPACE:  apps-prod\nTRIGGER:    [prod] commit on main" },
+            { "type": "header2", "text": "Homelab Services (n8n, PocketBase)" },
+            { "type": "text", "text": "Core homelab services — n8n workflow automation and PocketBase BaaS — are also deployed via GitHub Actions. Config changes (env vars, K8s manifests) are committed and deployed with `[prod]` rather than manual `kubectl apply` on the server." },
+            { "type": "code", "language": "bash", "code": "# n8n\nIMAGE:      n8nio/n8n:latest (upstream, no custom build)\nDEPLOYMENT: n8n\nNAMESPACE:  apps-prod\n\n# PocketBase\nIMAGE:      ghcr.io/joshi-labs/pocketbase:latest\nDEPLOYMENT: pocketbase\nNAMESPACE:  apps-prod" }
+          ]
+        },
+        {
+          "id": "trigger-pattern",
+          "title": "The [prod] Trigger Pattern",
+          "content": [
+            { "type": "header", "text": "The [prod] Commit Trigger Pattern" },
+            { "type": "text", "text": "All pipelines share the same trigger logic — a commit message check before any expensive steps run. Regular pushes (bug fixes, WIP commits, README updates) don't trigger a deploy. Only intentional `[prod]` commits hit the cluster." },
+            { "type": "code", "language": "bash", "code": "# Regular push — no deploy\ngit commit -m \"fix: typo in dashboard label\"\ngit push\n# → GitHub Actions skips deploy job entirely\n\n# Production deploy\ngit commit -m \"feat: add network drops metric card [prod]\"\ngit push\n# → GitHub Actions: build → push → deploy → rollout status" },
+            { "type": "code", "language": "yaml", "code": "# The trigger condition in every workflow\njobs:\n  deploy:\n    if: contains(github.event.head_commit.message, '[prod]')" },
+            { "type": "alert", "variant": "tip", "title": "Why Not Branch-Based Triggers?", "text": "Branch-based triggers (e.g. deploy on push to `main`) cause accidental deploys during active development. The `[prod]` pattern gives **explicit intent** — you decide per-commit whether it goes to production. No separate `release` branch needed, no PR merge ceremony." }
+          ]
+        },
+        {
+          "id": "rolling-update",
+          "title": "Zero Downtime Rolling Updates",
+          "content": [
+            { "type": "header", "text": "Zero Downtime Rolling Updates" },
+            { "type": "text", "text": "K8s rolling updates replace pods one at a time. On a single-node homelab this still works — the new pod starts, passes readiness checks, then the old pod is terminated. The pipeline blocks on `kubectl rollout status` so a failed deploy is caught immediately." },
+            { "type": "code", "language": "bash", "code": "# What happens during a rolling restart\n\nkubectl rollout restart deployment stats-app -n apps-prod\n# → K8s creates new pod with new image\n# → New pod pulls ghcr.io/joshi-labs/stats:latest\n# → Readiness probe passes (HTTP 200 on /)\n# → Old pod receives SIGTERM, graceful shutdown\n# → Old pod terminated\n\nkubectl rollout status deployment stats-app -n apps-prod\n# → Waiting for deployment \"stats-app\" rollout to finish...\n# → deployment \"stats-app\" successfully rolled out\n# → Pipeline step exits 0 ✓\n\n# If new pod fails:\n# → Readiness probe fails repeatedly\n# → K8s does NOT terminate old pod\n# → rollout status exits non-zero\n# → Pipeline fails, old pod stays live ✓" },
+            { "type": "alert", "variant": "info", "title": "Automatic Rollback Safety", "text": "If the new image crashes on startup or fails readiness checks, `kubectl rollout status` returns a non-zero exit code — failing the pipeline. The old pod is **never terminated** until the new one is healthy. On a homelab with no redundant nodes, this is the safety net that prevents outages from bad deploys." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "secrets",
+          "title": "Secrets & Security",
+          "content": [
+            { "type": "header", "text": "Secrets & Security" },
+            { "type": "text", "text": "Three GitHub Actions secrets power the entire pipeline across all projects:" },
+            { "type": "code", "language": "bash", "code": "# GitHub Actions Secrets (repo or org level)\nK8S_API_URL   → https://k8s-api.vpjoshi.in   (K8s API endpoint)\nK8S_TOKEN     → <ci-user permanent token>     (scoped to apps-prod)\nGITHUB_TOKEN  → auto-provided by GitHub       (GHCR push auth)" },
+            { "type": "list", "items": [
+              "**`K8S_API_URL`** - The K8s API server URL. Public via Cloudflare Tunnel but requires a valid token to authenticate.",
+              "**`K8S_TOKEN`** - The `ci-user` permanent service account token. Scoped to `apps-prod` namespace only — no cluster-admin.",
+              "**`GITHUB_TOKEN`** - Automatically provided by GitHub Actions. Used to push Docker images to GHCR. No manual secret needed."
+            ]},
+            { "type": "alert", "variant": "warning", "title": "insecure-skip-tls-verify", "text": "`insecure-skip-tls-verify: true` is set in the kubeconfig because the k3s API server uses a self-signed certificate. The connection is still encrypted — TLS is active, only certificate verification is skipped. For production multi-team clusters, the CA cert should be passed explicitly instead." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Tech Stack" },
+            { "type": "list", "items": [
+              "**GitHub Actions** - CI/CD runner, `ubuntu-latest` hosted runners.",
+              "**Docker Buildx** - Multi-platform image builds.",
+              "**GHCR (GitHub Container Registry)** - Private container image registry, free for the Joshi-labs org.",
+              "**kubectl** - Installed fresh on each runner, latest stable version.",
+              "**k3s** - Self-hosted lightweight Kubernetes cluster on the homelab server.",
+              "**Cloudflare Tunnel** - Exposes `k8s-api.vpjoshi.in` securely without open ports.",
+              "**K8s RBAC** - `ci-user` service account scoped to `apps-prod` namespace.",
+              "**Kubernetes Rolling Updates** - Zero downtime deploys with automatic rollback on failure."
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}

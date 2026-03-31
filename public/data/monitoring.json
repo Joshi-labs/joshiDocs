@@ -1,0 +1,207 @@
+{
+  "projectTitle": "Observability Platform",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Self-Hosted Observability Platform" },
+            { "type": "text", "text": "A **production-grade observability stack** built from scratch on a self-hosted k3s Kubernetes cluster — monitoring every layer of the infrastructure in real time. Prometheus scrapes hardware and container metrics every 10 seconds, Grafana visualizes them internally, and a custom Next.js dashboard exposes a public-facing view without authentication." },
+            { "type": "text", "text": "This was the first DevOps project on the homelab — setting up full observability before deploying any other workload. The principle: **you can't manage what you can't measure**. Before running n8n, LLaMA, or any other service, the monitoring stack went in first." },
+            { "type": "alert", "variant": "info", "title": "Live Dashboards", "text": "**Public dashboard** - stats.vpjoshi.in (no login) · **Grafana** - grafana.vpjoshi.in (auth protected) · Both running on the homelab k3s cluster, exposed via Cloudflare Tunnel." }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Running a self-hosted server without observability is flying blind. You don't know if RAM is saturating, if a pod is consuming unexpected CPU, if disk is filling up, or if the server is throttling under load. By the time something breaks, it's too late to understand why." },
+            { "type": "text", "text": "Grafana Cloud and Datadog solve this but cost money and send your metrics to external servers — defeating the purpose of self-hosting. The goal was a **fully on-premise observability stack** with zero data leaving the homelab and zero ongoing cost." },
+            { "type": "alert", "variant": "warning", "title": "Grafana's Limitation", "text": "Grafana dashboards require authentication — there's no native way to share a live public dashboard without giving someone a login. For a homelab, this means server stats can't be shared publicly. A custom public dashboard was needed." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution Overview" },
+            { "type": "text", "text": "A two-layer observability stack — **Grafana + Prometheus** for deep internal monitoring, and a **custom Next.js dashboard** for public-facing metrics. Both run as K8s deployments on the same cluster they're monitoring, exposed via Cloudflare Tunnel." },
+            { "type": "list", "items": [
+              "**Prometheus** - Scrapes `node_exporter` (hardware) and `scaphandre` (power) every 10 seconds. Stores time-series metrics locally.",
+              "**Grafana** - Full internal dashboard at grafana.vpjoshi.in. Uses the Node Exporter Full dashboard (ID: 1860) — 200+ panels covering every hardware and OS metric.",
+              "**stats.vpjoshi.in** - Custom Next.js 15 app that queries Prometheus server-side and renders a public dashboard. No auth wall, no Grafana dependency.",
+              "**node_exporter** - Exposes CPU, RAM, disk, network, pressure, and context switch metrics from the host.",
+              "**scaphandre** - Exposes real-time power draw in microwatts. Used to calculate live electricity cost.",
+              "**Cloudflare Tunnel** - Both dashboards exposed publicly with no open ports on the home router."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Monitoring the Monitor", "text": "Prometheus itself is monitored — it scrapes its own `/metrics` endpoint. If Prometheus goes down, Grafana alerts. The stack is self-aware." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "code", "language": "bash", "code": "┌──────────────────────────────────────────────────────────────┐\n│                    homelab server (i3-7100)                   │\n│                                                              │\n│  ┌─────────────────────────────────────────────────────────┐ │\n│  │                  k3s Cluster                            │ │\n│  │                                                         │ │\n│  │  ┌──────────────┐   scrape    ┌─────────────────────┐   │ │\n│  │  │ node_exporter│────────────►│                     │   │ │\n│  │  │  (port 9100) │             │     Prometheus      │   │ │\n│  │  └──────────────┘             │     (port 9090)     │   │ │\n│  │  ┌──────────────┐   scrape    │   stores metrics    │   │ │\n│  │  │ scaphandre   │────────────►│   every 10s         │   │ │\n│  │  │  (power)     │             └──────────┬──────────┘   │ │\n│  │  └──────────────┘                        │              │ │\n│  │                               ┌──────────┴──────────┐   │ │\n│  │                               │   PromQL queries     │   │ │\n│  │                    ┌──────────┘          └──────────┐│   │ │\n│  │                    ▼                               ▼│   │ │\n│  │  ┌─────────────────────┐       ┌───────────────────┐│   │ │\n│  │  │      Grafana        │       │  Next.js (stats)  ││   │ │\n│  │  │  grafana.vpjoshi.in │       │ stats.vpjoshi.in  ││   │ │\n│  │  │  (auth protected)   │       │  (public, no auth)││   │ │\n│  │  │  Node Exporter Full │       │  server-side query││   │ │\n│  │  └─────────────────────┘       └───────────────────┘│   │ │\n│  └─────────────────────────────────────────────────────┘ │\n│                          │                               │\n│              ┌───────────▼───────────┐                   │\n│              │   Cloudflare Tunnel   │                   │\n│              └───────────┬───────────┘                   │\n└──────────────────────────┼──────────────────────────────┘\n                           │\n          ┌────────────────┼─────────────────┐\n          ▼                ▼                 ▼\n  grafana.vpjoshi.in  stats.vpjoshi.in  (other services)" },
+            { "type": "alert", "variant": "info", "title": "No Open Ports", "text": "Neither Grafana nor stats.vpjoshi.in have open ports on the home router. **Cloudflare Tunnel** creates a secure outbound-only connection — all traffic is proxied through Cloudflare with automatic TLS." }
+          ]
+        },
+        {
+          "id": "k8s-deployment",
+          "title": "Kubernetes Deployment",
+          "content": [
+            { "type": "header", "text": "Kubernetes Deployment" },
+            { "type": "text", "text": "Every component of the observability stack runs as a K8s workload on k3s. Prometheus and Grafana run in the `monitoring` namespace. `node_exporter` runs as a **DaemonSet** — one pod per node, guaranteed — so it always has access to host-level metrics regardless of scheduling." },
+            { "type": "code", "language": "yaml", "code": "# node_exporter — DaemonSet (one pod per node, host network)\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: node-exporter\n  namespace: monitoring\nspec:\n  selector:\n    matchLabels:\n      app: node-exporter\n  template:\n    spec:\n      hostNetwork: true       # access host network metrics\n      hostPID: true           # access host process metrics\n      containers:\n        - name: node-exporter\n          image: prom/node-exporter:latest\n          args:\n            - '--path.rootfs=/host'\n          volumeMounts:\n            - name: host-root\n              mountPath: /host\n              readOnly: true\n      volumes:\n        - name: host-root\n          hostPath:\n            path: /" },
+            { "type": "code", "language": "yaml", "code": "# Prometheus — Deployment with PVC for metric storage\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: prometheus\n  namespace: monitoring\nspec:\n  replicas: 1\n  template:\n    spec:\n      containers:\n        - name: prometheus\n          image: prom/prometheus:latest\n          args:\n            - '--config.file=/etc/prometheus/prometheus.yml'\n            - '--storage.tsdb.path=/prometheus'\n            - '--storage.tsdb.retention.time=30d'\n          volumeMounts:\n            - name: config\n              mountPath: /etc/prometheus\n            - name: storage\n              mountPath: /prometheus\n      volumes:\n        - name: storage\n          persistentVolumeClaim:\n            claimName: prometheus-pvc    # local-path PVC on k3s" },
+            { "type": "alert", "variant": "tip", "title": "30-Day Retention", "text": "Prometheus is configured with `--storage.tsdb.retention.time=30d` — 30 days of metric history stored on the local SSD. Enough for trend analysis and incident retrospectives without consuming too much of the 128GB disk." }
+          ]
+        },
+        {
+          "id": "prometheus",
+          "title": "Prometheus Configuration",
+          "content": [
+            { "type": "header", "text": "Prometheus Configuration" },
+            { "type": "text", "text": "Prometheus is configured to scrape three targets — `node_exporter` for hardware metrics, `scaphandre` for power draw, and itself for meta-monitoring. All scrape intervals are 10 seconds for high-resolution time series." },
+            { "type": "code", "language": "yaml", "code": "# prometheus.yml\nglobal:\n  scrape_interval: 10s\n  evaluation_interval: 10s\n\nscrape_configs:\n  - job_name: 'node-exporter'\n    static_configs:\n      - targets: ['localhost:9100']\n    relabel_configs:\n      - source_labels: [__address__]\n        target_label: instance\n        replacement: 'homelab'\n\n  - job_name: 'scaphandre'\n    static_configs:\n      - targets: ['localhost:8080']\n\n  - job_name: 'prometheus'\n    static_configs:\n      - targets: ['localhost:9090']" },
+            { "type": "header2", "text": "Key PromQL Queries" },
+            { "type": "text", "text": "These are the core queries powering both Grafana panels and the stats.vpjoshi.in API routes:" },
+            { "type": "code", "language": "bash", "code": "# CPU Load %\n100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)\n\n# CPU Temperature\nnode_hwmon_temp_celsius{chip=~\".*coretemp.*\", sensor=\"temp1\"}\n\n# Live Power Draw (watts)\nscaph_host_power_microwatts / 1000000\n\n# Avg Power last 1hr\navg_over_time(scaph_host_power_microwatts[1h:10s]) / 1000000\n\n# RAM Usage %\n(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100\n\n# Disk Used %\n(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} /\n  node_filesystem_size_bytes{mountpoint=\"/\"})) * 100\n\n# Network I/O (KB/s)\nrate(node_network_receive_bytes_total{device=\"eth0\"}[1m]) / 1024\nrate(node_network_transmit_bytes_total{device=\"eth0\"}[1m]) / 1024\n\n# Session uptime\ntime() - node_boot_time_seconds\n\n# CPU Pressure (PSI)\nrate(node_pressure_cpu_waiting_seconds_total[1m])\n\n# Context switches/s\nrate(node_context_switches_total[1m])" }
+          ]
+        },
+        {
+          "id": "grafana",
+          "title": "Grafana - Internal Dashboard",
+          "content": [
+            { "type": "header", "text": "Grafana - Internal Monitoring Dashboard" },
+            { "type": "image", "src": "/images/grafana/1.png", "alt": "Grafana Dashboard", "caption": "Node Exporter Full dashboard (ID: 1860) — 200+ panels covering every hardware and OS metric." },
+            { "type": "text", "text": "**Grafana** runs at `grafana.vpjoshi.in` (auth protected) as a K8s deployment in the `monitoring` namespace. It connects to the Prometheus datasource on the same cluster via the internal K8s service DNS — no external network hop." },
+            { "type": "header2", "text": "Node Exporter Full Dashboard" },
+            { "type": "text", "text": "The primary dashboard is the community **Node Exporter Full** (Grafana dashboard ID: 1860) — imported directly from Grafana's dashboard registry. It provides 200+ pre-built panels covering every metric exposed by node_exporter." },
+            { "type": "list", "items": [
+              "**CPU** - per-core usage, load average, steal time, iowait, system/user split.",
+              "**Memory** - RAM usage, swap, page faults, memory pressure (PSI).",
+              "**Disk** - read/write throughput, IOPS, disk utilization %, filesystem usage.",
+              "**Network** - in/out throughput per interface, errors, drops, TCP connections.",
+              "**System** - context switches/s, interrupts/s, processes, file descriptors.",
+              "**Hardware** - CPU temperature per core (via hwmon), power draw (scaphandre).",
+              "**Pressure** - Linux PSI (Pressure Stall Information) for CPU, memory, and IO."
+            ]},
+            { "type": "code", "language": "yaml", "code": "# Grafana datasource — connects to Prometheus via K8s internal DNS\napiVersion: 1\ndatasources:\n  - name: Prometheus\n    type: prometheus\n    url: http://prometheus-svc.monitoring.svc.cluster.local:9090\n    isDefault: true\n    jsonData:\n      timeInterval: '10s'" },
+            { "type": "alert", "variant": "info", "title": "Internal DNS", "text": "Grafana reaches Prometheus via K8s internal service DNS (`prometheus-svc.monitoring.svc.cluster.local`) — no external network hop, no Cloudflare Tunnel involved. Internal cluster traffic stays inside the cluster." }
+          ]
+        },
+        {
+          "id": "stats-dashboard",
+          "title": "stats.vpjoshi.in - Public Dashboard",
+          "content": [
+            { "type": "header", "text": "stats.vpjoshi.in - Public Monitoring Dashboard" },
+            { "type": "image", "src": "/images/stats/1.png", "alt": "stats.vpjoshi.in", "caption": "Public dashboard — live CPU, RAM, power draw, uptime, electricity cost, and network I/O. No login required." },
+            { "type": "text", "text": "A custom **Next.js 15** app that queries Prometheus server-side via API routes and renders a public-facing metrics page. Built because Grafana dashboards require authentication — this exposes live server stats to anyone at `stats.vpjoshi.in` with no auth wall." },
+            { "type": "header2", "text": "Server-Side Query Architecture" },
+            { "type": "text", "text": "`PROMETHEUS_URL` is an environment variable only available server-side. The browser never talks to Prometheus directly — it only hits `/api/metrics/*` routes on the same origin. This keeps the internal Prometheus port private even though the dashboard is public." },
+            { "type": "code", "language": "typescript", "code": "// /app/api/metrics/stats/route.ts\n// All 20+ stat card values fetched in one Promise.all — single round trip\nexport async function GET() {\n  const PROM = process.env.PROMETHEUS_URL;\n\n  const query = (q: string) =>\n    fetch(`${PROM}/api/v1/query?query=${encodeURIComponent(q)}`)\n      .then(r => r.json())\n      .then(d => parseFloat(d.data.result[0]?.value[1] ?? '0'));\n\n  const [cpu, temp, powerLive, powerAvg, ram, disk, uptime, swap] =\n    await Promise.all([\n      query('100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)'),\n      query('node_hwmon_temp_celsius{sensor=\"temp1\"}'),\n      query('scaph_host_power_microwatts / 1000000'),\n      query('avg_over_time(scaph_host_power_microwatts[1h:10s]) / 1000000'),\n      query('(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'),\n      query('(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100'),\n      query('time() - node_boot_time_seconds'),\n      query('(node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes * 100'),\n    ]);\n\n  // Estimated monthly electricity cost\n  const monthlyCost = (powerAvg * 24 * 30) / 1000 * 6; // ₹6/kWh\n\n  return Response.json({ cpu, temp, powerLive, powerAvg, monthlyCost, ram, disk, uptime, swap });\n}" },
+            { "type": "header2", "text": "Metrics on Display" },
+            { "type": "list", "items": [
+              "**CPU load %** - averaged over last 1 minute via PromQL rate.",
+              "**CPU temperature** - from `node_hwmon_temp_celsius` (hwmon coretemp driver).",
+              "**Live power draw** - `scaph_host_power_microwatts` converted to watts.",
+              "**Avg power (1hr)** - `avg_over_time` subquery over the last hour.",
+              "**Est. monthly electricity cost** - avg watts × 24h × 30d ÷ 1000 × ₹6/unit.",
+              "**RAM usage %** - MemAvailable vs MemTotal.",
+              "**Disk used %** - filesystem avail vs total at mountpoint `/`.",
+              "**Swap usage** - SwapFree vs SwapTotal.",
+              "**Session uptime** - `time() - node_boot_time_seconds`.",
+              "**Total uptime** - hardcoded start date (1 Feb 2026) vs `Date.now()`.",
+              "**Network I/O** - in/out KB/s via `rate(node_network_*_bytes_total[1m])`.",
+              "**Load avg 1m/5m** - `node_load1`, `node_load5`.",
+              "**CPU/RAM pressure (PSI)** - Linux pressure stall information.",
+              "**Context switches/s** - `rate(node_context_switches_total[1m])`.",
+              "**Disk read/write KB/s** - `rate(node_disk_*_bytes_total[1m])`.",
+              "**Network drops** - `rate(node_network_receive_drop_total[1m])`."
+            ]},
+            { "type": "header2", "text": "SWR Refresh & CI/CD" },
+            { "type": "text", "text": "The frontend uses **SWR** for data fetching with a configurable refresh interval selectable from the UI (10s → 5m). The refresh interval is passed to both `useStats()` and each chart component so everything refreshes in sync. Deployed to k3s via GitHub Actions on `[prod]` commit messages — same CI/CD pattern as all other homelab services." },
+            { "type": "alert", "variant": "tip", "title": "Single Endpoint Design", "text": "All 20+ stat card values are fetched in a **single `Promise.all`** via `/api/metrics/stats` — one round trip instead of 20 individual requests. Charts have their own endpoints (`/api/metrics/temp`, `/api/metrics/power`, etc.) since they poll on different schedules." }
+          ]
+        },
+        {
+          "id": "cloudflare-ingress",
+          "title": "Cloudflare Tunnel Ingress",
+          "content": [
+            { "type": "header", "text": "Cloudflare Tunnel Ingress" },
+            { "type": "text", "text": "Both Grafana and stats.vpjoshi.in are exposed via **Cloudflare Tunnel** — a secure outbound-only connection from the homelab to Cloudflare's edge. No ports are open on the home router. No public IP is needed. TLS is handled automatically by Cloudflare." },
+            { "type": "code", "language": "yaml", "code": "# cloudflared tunnel config\ningress:\n  - hostname: grafana.vpjoshi.in\n    service: http://grafana-svc.monitoring.svc.cluster.local:3000\n\n  - hostname: stats.vpjoshi.in\n    service: http://stats-svc.monitoring.svc.cluster.local:3000\n\n  - service: http_status:404" },
+            { "type": "text", "text": "The tunnel routes traffic from Cloudflare's edge directly to the K8s internal service DNS — bypassing Traefik for monitoring services. This isolates the monitoring stack from the main ingress controller, so a Traefik misconfiguration can't accidentally expose or break Grafana." },
+            { "type": "alert", "variant": "warning", "title": "Grafana Auth", "text": "Even though Grafana is behind Cloudflare Tunnel, it still requires **Grafana's own login**. Two layers of protection — Cloudflare blocks DDoS and bot traffic at the edge, Grafana enforces user authentication at the application level." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "tech-stack",
+          "title": "Full Stack",
+          "content": [
+            { "type": "header", "text": "Full Technical Stack" },
+            { "type": "header2", "text": "Metrics Collection" },
+            { "type": "list", "items": [
+              "**Prometheus** - Time-series metrics storage and PromQL query engine. 30-day retention.",
+              "**node_exporter** - Exposes 200+ hardware and OS metrics from the host (CPU, RAM, disk, network, pressure, hwmon).",
+              "**scaphandre** - Real-time power draw in microwatts via RAPL (Running Average Power Limit)."
+            ]},
+            { "type": "header2", "text": "Internal Dashboard" },
+            { "type": "list", "items": [
+              "**Grafana** - Full monitoring dashboard at grafana.vpjoshi.in (auth protected).",
+              "**Node Exporter Full (ID: 1860)** - 200+ panel community dashboard, imported from Grafana registry."
+            ]},
+            { "type": "header2", "text": "Public Dashboard" },
+            { "type": "list", "items": [
+              "**Next.js 15 (App Router)** - Server-side Prometheus queries via API routes.",
+              "**TypeScript 5** - Full type safety across components, hooks, and API responses.",
+              "**Tailwind CSS v4** - Dark theme UI.",
+              "**Recharts** - AreaChart for all time-series graphs (temp, power, RAM, network).",
+              "**SWR** - Configurable refresh interval (10s → 5m), UI-controlled."
+            ]},
+            { "type": "header2", "text": "Infrastructure" },
+            { "type": "list", "items": [
+              "**k3s** - Lightweight Kubernetes, all components run as K8s workloads.",
+              "**DaemonSet** - node_exporter runs as a DaemonSet with `hostNetwork: true` for host-level access.",
+              "**Cloudflare Tunnel** - Secure public exposure for both Grafana and stats dashboard.",
+              "**GitHub Actions** - CI/CD for stats.vpjoshi.in, deploys on `[prod]` commit messages.",
+              "**Persistent Volume** - Prometheus metric storage on local-path PVC, 30-day retention."
+            ]}
+          ]
+        },
+        {
+          "id": "devops-lessons",
+          "title": "DevOps Lessons",
+          "content": [
+            { "type": "header", "text": "Key DevOps Lessons" },
+            { "type": "header2", "text": "Observability First" },
+            { "type": "text", "text": "The monitoring stack was deployed before any other service on the homelab. This meant every new workload — n8n, LLaMA, PocketBase, Postgres — was observable from day one. RAM pressure during LLaMA inference, disk I/O spikes during n8n workflows, and network drops were all visible immediately." },
+            { "type": "header2", "text": "DaemonSet vs Deployment" },
+            { "type": "text", "text": "node_exporter must run as a **DaemonSet** with `hostNetwork: true` and `hostPID: true` — not a regular Deployment. A Deployment could be scheduled on any node and might miss host-level metrics. A DaemonSet guarantees exactly one pod per node with full host access." },
+            { "type": "header2", "text": "Internal DNS for Datasources" },
+            { "type": "text", "text": "Grafana connects to Prometheus via **K8s internal service DNS** (`prometheus-svc.monitoring.svc.cluster.local`) — not via `localhost` or an external URL. This works regardless of which node each pod is scheduled on, and keeps all metric traffic inside the cluster." },
+            { "type": "header2", "text": "Server-Side Prometheus Queries" },
+            { "type": "text", "text": "The public stats dashboard queries Prometheus **server-side only** — `PROMETHEUS_URL` is never exposed to the browser. Even though the dashboard is fully public, the internal Prometheus port and network address are never revealed to clients." },
+            { "type": "alert", "variant": "tip", "title": "MTU & DNS Gotchas", "text": "Two real issues hit during setup: an **MTU mismatch** (fixed via `FLANNEL_MTU=1450`) caused silent packet drops on cross-pod traffic. **ISP-injected search domains** leaked into CoreDNS via `/etc/resolv.conf`, breaking internal DNS resolution — fixed by symlinking to the non-stub resolver and overriding Netplan DHCP DNS settings." }
+          ]
+        }
+      ]
+    }
+  ]
+}

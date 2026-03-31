@@ -1,0 +1,199 @@
+{
+  "projectTitle": "Cloudflare Tunnel - Homelab Ingress",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "Cloudflare Tunnel - Zero-Trust Homelab Ingress" },
+            { "type": "text", "text": "A **production-grade ingress layer** for a self-hosted homelab server — exposing 12+ services publicly across multiple domains with **zero open ports**, zero public IP exposure, automatic TLS, and DDoS protection. All powered by a single Cloudflare Tunnel running as a Docker container." },
+            { "type": "text", "text": "This is the backbone of the entire homelab infrastructure. Every public-facing service — from the Kubernetes API to personal projects to early-stage business ideas — is routed through a single `cloudflared` daemon that creates an outbound-only encrypted tunnel to Cloudflare's edge network." },
+            { "type": "alert", "variant": "info", "title": "Average Latency", "text": "**~350ms average latency** for self-hosted APIs — competitive with budget VPS providers, achieved from a home server behind a residential ISP with no port forwarding. Cloudflare's global edge network handles the heavy lifting." }
+          ]
+        },
+        {
+          "id": "problem",
+          "title": "Problem Statement",
+          "content": [
+            { "type": "header", "text": "The Problem" },
+            { "type": "text", "text": "Running a homelab server and exposing services publicly is harder than it sounds. The conventional approach — port forwarding on the home router — comes with a stack of real problems that make it unsuitable for anything beyond casual tinkering." },
+            { "type": "list", "items": [
+              "**No static IP** - Most residential ISPs assign dynamic IPs. Your DNS records go stale every time the IP rotates, taking services offline.",
+              "**Router port forwarding** - Exposes your home network's public IP. Every open port is a potential attack surface — bots scan the entire IPv4 space in under an hour.",
+              "**No TLS by default** - Setting up SSL certificates manually (Let's Encrypt + certbot) per service adds complexity and maintenance overhead.",
+              "**ISP restrictions** - Many residential ISPs block inbound traffic on ports 80 and 443 entirely, making standard web hosting impossible.",
+              "**DDoS exposure** - A direct connection to your home IP means a DDoS attack hits your home router — taking down your entire network, not just the targeted service.",
+              "**No access control at edge** - Without a CDN in front, there's no way to rate-limit, geo-block, or apply WAF rules before traffic reaches your server."
+            ]},
+            { "type": "alert", "variant": "warning", "title": "The Core Problem", "text": "Traditional homelab exposure reveals your home IP, requires open inbound ports, provides no TLS automation, and leaves you fully exposed to the internet. For a server running passion projects and early business ideas, this is unacceptable." }
+          ]
+        },
+        {
+          "id": "solution",
+          "title": "Solution Overview",
+          "content": [
+            { "type": "header", "text": "Solution - Cloudflare Tunnel" },
+            { "type": "text", "text": "**Cloudflare Tunnel** (`cloudflared`) flips the connection model entirely. Instead of Cloudflare connecting inbound to your server, your server connects outbound to Cloudflare. The tunnel is a persistent encrypted connection — Cloudflare's edge receives public traffic and forwards it through the tunnel to your server. Your home IP is never revealed." },
+            { "type": "list", "items": [
+              "**Zero open ports** - No inbound ports on the router. The tunnel is outbound-only (QUIC/HTTP2 to Cloudflare).",
+              "**No public IP exposure** - Cloudflare acts as the public face. Your home IP is completely hidden from clients.",
+              "**Automatic TLS** - Cloudflare terminates TLS at the edge. Every subdomain gets HTTPS automatically — no certbot, no renewal cron jobs.",
+              "**DDoS protection** - Cloudflare absorbs DDoS attacks at the edge. Your server only receives clean, proxied traffic.",
+              "**Dynamic IP resilient** - The tunnel reconnects automatically when your ISP rotates your IP. DNS never needs updating.",
+              "**Multi-domain, multi-service** - One tunnel handles all 12 services across `vpjoshi.in`, `unetify.in`, and `joshistudio.com`.",
+              "**Free tier** - The entire setup runs on Cloudflare's free plan. No cost for tunnels, TLS, or DDoS protection."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "One Tunnel, Three Domains", "text": "A single `cloudflared` instance routes traffic for **3 different domains** — `vpjoshi.in` (personal homelab), `unetify.in` (AI agent platform), and `joshistudio.com` (web agency). One process, one config file, zero extra cost." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Architecture",
+      "items": [
+        {
+          "id": "architecture",
+          "title": "System Architecture",
+          "content": [
+            { "type": "header", "text": "System Architecture" },
+            { "type": "code", "language": "bash", "code": "         Internet (Client Browser / API caller)\n                          │\n                          │ HTTPS (port 443)\n                          ▼\n            ┌─────────────────────────┐\n            │    Cloudflare Edge      │\n            │    (global network)     │\n            │                         │\n            │  TLS termination        │\n            │  DDoS protection        │\n            │  WAF / rate limiting    │\n            │  DNS routing            │\n            └────────────┬────────────┘\n                         │\n                         │ Encrypted tunnel\n                         │ (QUIC / HTTP2, outbound)\n                         │\n            ┌────────────▼────────────┐\n            │  cloudflared daemon     │\n            │  (Docker container)     │\n            │                         │\n            │  reads config.yml       │\n            │  matches hostname →     │\n            │  routes to service      │\n            └────────────┬────────────┘\n                         │\n         ┌───────────────┼────────────────────┐\n         │               │                    │\n         ▼               ▼                    ▼\n  ┌─────────────┐ ┌─────────────┐    ┌─────────────────┐\n  │  Direct     │ │  K8s API    │    │  Traefik        │\n  │  Services   │ │  :6443      │    │  Ingress :80    │\n  │             │ │  (k3s)      │    │                 │\n  │ grafana     │ └──────┬──────┘    │  stats-app      │\n  │ :1005       │        │           │  s3-drive       │\n  │ n8n :1007   │        ▼           │  portfolio      │\n  │ portainer   │  ┌───────────┐     │  unetify api    │\n  │ :1002       │  │ k3s pods  │     └─────────────────┘\n  │ filebrowser │  │ via RBAC  │\n  │ :1001       │  └───────────┘\n  │ ollama-api  │\n  │ :1003       │\n  │ pocketbase  │\n  │ :1008/:1009 │\n  └─────────────┘" },
+            { "type": "alert", "variant": "info", "title": "Two Routing Paths", "text": "Services are reached via two paths — **direct port routing** (Grafana, n8n, PocketBase etc. on fixed ports) and **Traefik ingress** (stats, s3-drive, portfolio, unetify — all behind port 80, routed by Traefik inside k3s). The K8s API gets special treatment with `noTLSVerify: true` since it uses a self-signed cert." }
+          ]
+        },
+        {
+          "id": "k8s-flow",
+          "title": "K8s Ingress Flow",
+          "content": [
+            { "type": "header", "text": "Full K8s Ingress Flow" },
+            { "type": "text", "text": "For services running inside the k3s cluster, requests travel through four layers before hitting the application pod — Cloudflare edge → tunnel → Traefik ingress → pod." },
+            { "type": "code", "language": "bash", "code": "Client: GET https://stats.vpjoshi.in/api/metrics/stats\n        │\n        ▼\n┌─────────────────────────────────┐\n│  Cloudflare Edge                │\n│  - TLS termination              │\n│  - DNS: stats.vpjoshi.in        │\n│    → CNAME to tunnel endpoint   │\n└────────────────┬────────────────┘\n                 │ tunnel (encrypted, outbound)\n                 ▼\n┌─────────────────────────────────┐\n│  cloudflared (Docker)           │\n│                                 │\n│  hostname: stats.vpjoshi.in     │\n│  → service: http://192.168.x.x:80│\n└────────────────┬────────────────┘\n                 │ HTTP to port 80\n                 ▼\n┌─────────────────────────────────┐\n│  Traefik Ingress Controller     │\n│  (k3s built-in)                 │\n│                                 │\n│  IngressRoute:                  │\n│  Host: stats.vpjoshi.in         │\n│  → Service: stats-svc:3000      │\n└────────────────┬────────────────┘\n                 │ cluster-internal\n                 ▼\n┌─────────────────────────────────┐\n│  K8s Service (ClusterIP)        │\n│  stats-svc → port 3000          │\n└────────────────┬────────────────┘\n                 │\n                 ▼\n┌─────────────────────────────────┐\n│  Pod: stats-app                 │\n│  Next.js 15, port 3000          │\n│  namespace: apps-prod           │\n└─────────────────────────────────┘" },
+            { "type": "code", "language": "yaml", "code": "# Traefik IngressRoute for stats app\napiVersion: traefik.io/v1alpha1\nkind: IngressRoute\nmetadata:\n  name: stats-ingress\n  namespace: apps-prod\nspec:\n  entryPoints:\n    - web\n  routes:\n    - match: Host(`stats.vpjoshi.in`)\n      kind: Rule\n      services:\n        - name: stats-svc\n          port: 3000" },
+            { "type": "alert", "variant": "tip", "title": "Why Traefik over Nginx Ingress?", "text": "k3s ships with **Traefik as the default ingress controller** — no extra installation needed. It supports dynamic config via CRDs (`IngressRoute`), has a built-in dashboard, and handles routing for all k3s-hosted services with zero additional overhead on an 8GB RAM server." }
+          ]
+        },
+        {
+          "id": "k8s-api-flow",
+          "title": "K8s API Tunnel",
+          "content": [
+            { "type": "header", "text": "K8s API Special Routing" },
+            { "type": "text", "text": "The K8s API server (`k8s-api.vpjoshi.in`) gets special treatment in the tunnel config — it routes to port 6443 (HTTPS) with `noTLSVerify: true` because k3s uses a self-signed certificate. This allows `kubectl` and GitHub Actions to reach the cluster API remotely without VPN." },
+            { "type": "code", "language": "yaml", "code": "# Tunnel config for K8s API\n- hostname: k8s-api.vpjoshi.in\n  service: https://192.168.x.x:6443\n  originRequest:\n    noTLSVerify: true   # k3s uses self-signed cert" },
+            { "type": "code", "language": "bash", "code": "# Access cluster from anywhere\nexport KUBECONFIG=~/.kube/homelab.yaml\nkubectl get pods -n apps-prod\n\n# Works from:\n# - Developer laptop\n# - GitHub Actions runner\n# - Any machine with the kubeconfig\n# No VPN, no SSH tunnel, no open firewall port" },
+            { "type": "alert", "variant": "warning", "title": "Security Note", "text": "`noTLSVerify: true` means the tunnel doesn't verify the k3s server certificate — but the connection from client to Cloudflare is still TLS-encrypted. Access is protected by the `ci-user` K8s service account token. For a homelab, this is an acceptable tradeoff. Production multi-team clusters should pass the CA cert explicitly." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Configuration",
+      "items": [
+        {
+          "id": "config",
+          "title": "Tunnel Configuration",
+          "content": [
+            { "type": "header", "text": "Tunnel Configuration" },
+            { "type": "text", "text": "The tunnel is configured via a single `config.yml` file. Each ingress rule maps a public hostname to an internal service — IP address and port. The final catch-all rule returns 404 for any hostname not explicitly listed." },
+            { "type": "code", "language": "yaml", "code": "# config.yml\ntunnel: <tunnel-id>\ncredentials-file: /home/nonroot/.cloudflared/<tunnel-id>.json\n\ningress:\n  # Internal tools\n  - hostname: filebrowser.vpjoshi.in\n    service: http://192.168.x.x:1001\n\n  - hostname: portainer.vpjoshi.in\n    service: http://192.168.x.x:1002\n\n  - hostname: ollama-api.vpjoshi.in\n    service: http://192.168.x.x:1003\n\n  - hostname: grafana.vpjoshi.in\n    service: http://192.168.x.x:1005\n\n  - hostname: n8n.vpjoshi.in\n    service: http://192.168.x.x:1007\n\n  # K8s API — HTTPS with self-signed cert\n  - hostname: k8s-api.vpjoshi.in\n    service: https://192.168.x.x:6443\n    originRequest:\n      noTLSVerify: true\n\n  # Traefik ingress — port 80, routed internally by k3s\n  - hostname: selfhosted-api.vpjoshi.in\n    service: http://192.168.x.x:80\n\n  - hostname: stats.vpjoshi.in\n    service: http://192.168.x.x:80\n\n  - hostname: s3-drive.vpjoshi.in\n    service: http://192.168.x.x:80\n\n  # unetify.in — AI agent platform\n  - hostname: api.unetify.in\n    service: http://192.168.x.x:80\n\n  - hostname: pocketbase.unetify.in\n    service: http://192.168.x.x:1008\n\n  # joshistudio.com — web agency\n  - hostname: pb.joshistudio.com\n    service: http://192.168.x.x:1009\n\n  # Catch-all\n  - service: http_status:404" },
+            { "type": "alert", "variant": "info", "title": "Port Strategy", "text": "Services on fixed ports (1001-1009) are Docker containers or standalone processes running directly on the host. Services on port 80 are routed through Traefik inside k3s — the tunnel sends all port-80 traffic to Traefik, which then routes by hostname to the correct pod." }
+          ]
+        },
+        {
+          "id": "setup",
+          "title": "Setup & Installation",
+          "content": [
+            { "type": "header", "text": "Setup & Installation" },
+            { "type": "header2", "text": "1. Create the Tunnel" },
+            { "type": "code", "language": "bash", "code": "# Install cloudflared\ncurl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \\\n  -o /usr/local/bin/cloudflared\nchmod +x /usr/local/bin/cloudflared\n\n# Authenticate with Cloudflare\ncloudflared tunnel login\n# → opens browser, select your zone\n# → saves cert.pem to ~/.cloudflared/\n\n# Create the tunnel\ncloudflared tunnel create homelab\n# → generates tunnel ID and credentials JSON\n# → saves to ~/.cloudflared/<tunnel-id>.json" },
+            { "type": "header2", "text": "2. Configure DNS" },
+            { "type": "code", "language": "bash", "code": "# Create CNAME records for each hostname\n# Points each subdomain to the tunnel endpoint\ncloudflared tunnel route dns homelab stats.vpjoshi.in\ncloudflared tunnel route dns homelab grafana.vpjoshi.in\ncloudflared tunnel route dns homelab k8s-api.vpjoshi.in\n# ... repeat for each hostname\n\n# Each creates a CNAME:\n# stats.vpjoshi.in → <tunnel-id>.cfargotunnel.com" },
+            { "type": "header2", "text": "3. Write config.yml" },
+            { "type": "code", "language": "bash", "code": "mkdir -p ~/.cloudflared\n# Write your config.yml as shown above\nvim ~/.cloudflared/config.yml" },
+            { "type": "header2", "text": "4. Run as Docker Container" },
+            { "type": "code", "language": "bash", "code": "# Run cloudflared as a Docker container\ndocker run -d \\\n  --name cloudflared \\\n  --restart unless-stopped \\\n  --network host \\\n  -v ~/.cloudflared:/home/nonroot/.cloudflared:ro \\\n  cloudflare/cloudflared:latest \\\n  tunnel --config /home/nonroot/.cloudflared/config.yml run\n\n# Verify it's connected\ndocker logs cloudflared\n# → INF Connection established connIndex=0\n# → INF Connection established connIndex=1\n# → INF Connection established connIndex=2\n# → INF Connection established connIndex=3\n# (4 connections to Cloudflare edge — HA by default)" },
+            { "type": "header2", "text": "5. Docker Compose (Recommended)" },
+            { "type": "code", "language": "yaml", "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  cloudflared:\n    image: cloudflare/cloudflared:latest\n    container_name: cloudflared\n    restart: unless-stopped\n    network_mode: host\n    volumes:\n      - ~/.cloudflared:/home/nonroot/.cloudflared:ro\n    command: tunnel --config /home/nonroot/.cloudflared/config.yml run" },
+            { "type": "code", "language": "bash", "code": "docker compose up -d cloudflared\ndocker compose logs -f cloudflared" },
+            { "type": "alert", "variant": "tip", "title": "network_mode: host", "text": "`network_mode: host` gives the cloudflared container direct access to the host network — it can reach services on `localhost` or `192.168.x.x` without any Docker networking complexity. Since the config maps to internal IPs, host networking is the simplest approach." }
+          ]
+        },
+        {
+          "id": "services-map",
+          "title": "Services Map",
+          "content": [
+            { "type": "header", "text": "Full Services Map" },
+            { "type": "code", "language": "bash", "code": "# vpjoshi.in — personal homelab\nfilebrowser.vpjoshi.in  → Filebrowser  (file manager UI)\nportainer.vpjoshi.in    → Portainer    (Docker container manager)\nollama-api.vpjoshi.in   → Ollama       (LLaMA 3.2 inference API)\ngrafana.vpjoshi.in      → Grafana      (internal monitoring, auth protected)\nk8s-api.vpjoshi.in      → k3s API      (kubectl / GitHub Actions access)\nn8n.vpjoshi.in          → n8n          (workflow automation)\nselfhosted-api.vpjoshi.in → k3s Traefik (general API ingress)\nstats.vpjoshi.in        → Stats App    (public monitoring dashboard)\ns3-drive.vpjoshi.in     → S3 Drive     (self-hosted Google Drive)\n\n# unetify.in — AI agent platform\napi.unetify.in          → Unetify API  (FastAPI backend, k3s)\npocketbase.unetify.in   → PocketBase   (Unetify auth + realtime)\n\n# joshistudio.com — web agency\npb.joshistudio.com      → PocketBase   (Joshi Studio backend)" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Technical",
+      "items": [
+        {
+          "id": "how-tunnel-works",
+          "title": "How Cloudflare Tunnel Works",
+          "content": [
+            { "type": "header", "text": "How Cloudflare Tunnel Works Internally" },
+            { "type": "text", "text": "`cloudflared` establishes **4 persistent outbound connections** to Cloudflare's edge network — one per connection for redundancy. These use QUIC (UDP) by default, falling back to HTTP/2 (TCP). When a request arrives at Cloudflare's edge for a tunneled hostname, it's forwarded through one of these connections to `cloudflared`, which proxies it to the local service." },
+            { "type": "code", "language": "bash", "code": "# cloudflared maintains 4 connections to edge (HA)\ncloudflared daemon\n  │\n  ├── conn 0 → Cloudflare PoP (Mumbai)\n  ├── conn 1 → Cloudflare PoP (Chennai)\n  ├── conn 2 → Cloudflare PoP (Singapore)\n  └── conn 3 → Cloudflare PoP (Mumbai)\n\n# If one connection drops → automatic reconnect\n# If ISP IP changes → tunnel reconnects, DNS unchanged\n# Client never sees the reconnect" },
+            { "type": "list", "items": [
+              "**QUIC protocol** — UDP-based, lower latency than TCP for most connections. Falls back to HTTP/2 if UDP is blocked.",
+              "**4 redundant connections** — if one edge PoP goes down, traffic automatically shifts to others.",
+              "**Automatic reconnect** — if the homelab loses internet briefly, `cloudflared` reconnects and all services come back without any DNS changes.",
+              "**Edge-side TLS** — Cloudflare terminates HTTPS at the edge. The tunnel itself is also encrypted. Two layers of encryption between client and server.",
+              "**No inbound firewall rules** — the home router needs zero configuration. All connections are outbound from the server."
+            ]}
+          ]
+        },
+        {
+          "id": "latency",
+          "title": "Latency & Performance",
+          "content": [
+            { "type": "header", "text": "Latency & Performance" },
+            { "type": "text", "text": "Average API latency is **~350ms** — composed of Cloudflare edge routing (~20ms), tunnel overhead (~10ms), and server processing time (variable). For a self-hosted homelab on a residential ISP, this is competitive with budget VPS providers." },
+            { "type": "code", "language": "bash", "code": "# Latency breakdown (approximate)\nClient → Cloudflare edge:     ~20ms  (depends on client location)\nCloudflare → tunnel:          ~10ms  (edge to homelab via tunnel)\nTunnel → service/pod:         ~1ms   (local routing)\nServer processing:            ~50-300ms (app dependent)\n─────────────────────────────────────\nTotal average:                ~350ms\n\n# Comparison\nBudget VPS (DigitalOcean BLR): ~80-150ms\nHomelab via tunnel:             ~300-400ms\nManaged cloud (AWS ap-south-1): ~50-100ms" },
+            { "type": "alert", "variant": "tip", "title": "Optimizing Latency", "text": "Latency is dominated by the residential ISP upload speed and Cloudflare PoP distance. For Indian users, Cloudflare routes through Mumbai or Chennai PoPs — keeping latency low. For static assets, Cloudflare's CDN caching eliminates the tunnel entirely — cached responses return in ~20ms." }
+          ]
+        },
+        {
+          "id": "reliability",
+          "title": "Reliability & Uptime",
+          "content": [
+            { "type": "header", "text": "Reliability & Uptime" },
+            { "type": "text", "text": "`cloudflared` runs with `--restart unless-stopped` in Docker — it automatically restarts on crash or server reboot. With 4 redundant tunnel connections to different Cloudflare PoPs, a single edge node failure is fully transparent to users." },
+            { "type": "list", "items": [
+              "**Auto-restart** - Docker restart policy ensures cloudflared comes back after server reboots or crashes.",
+              "**4 redundant connections** - traffic shifts to healthy connections if one drops.",
+              "**ISP IP rotation resilient** - when the residential IP changes, cloudflared reconnects outbound. No DNS TTL propagation delay.",
+              "**Cloudflare uptime** - Cloudflare's edge has 99.99%+ uptime SLA. The homelab server is the only potential point of failure.",
+              "**Health monitoring** - Prometheus + Grafana monitors the homelab server. If the server goes down, Grafana alerts via the monitoring stack."
+            ]},
+            { "type": "alert", "variant": "info", "title": "Single Point of Failure", "text": "The homelab is a single physical machine — if the server goes down, all services go down. The tunnel itself is redundant, but the hardware is not. For critical services, this is mitigated by keeping backups and having fast restore procedures. Passion projects and dev environments can tolerate occasional downtime." }
+          ]
+        },
+        {
+          "id": "tech-stack",
+          "title": "Tech Stack",
+          "content": [
+            { "type": "header", "text": "Tech Stack" },
+            { "type": "list", "items": [
+              "**cloudflared** - Cloudflare's open-source tunnel daemon (`cloudflare/cloudflared`).",
+              "**Docker** - cloudflared runs as a container with `network_mode: host`.",
+              "**Cloudflare DNS** - All subdomains are CNAME records pointing to the tunnel endpoint.",
+              "**Cloudflare TLS** - Automatic HTTPS for all hostnames. Edge certificates managed by Cloudflare.",
+              "**Traefik** - k3s built-in ingress controller. Routes port-80 traffic to the correct pod by hostname.",
+              "**k3s** - Lightweight Kubernetes. All app workloads run as K8s deployments behind Traefik.",
+              "**QUIC / HTTP2** - Transport protocols used by the tunnel connection to Cloudflare edge."
+            ]},
+            { "type": "header2", "text": "Useful Commands" },
+            { "type": "code", "language": "bash", "code": "# Check tunnel status\ndocker logs cloudflared --tail 20\n\n# List all tunnels in your account\ncloudflared tunnel list\n\n# Test a specific route\ncloudflared tunnel ingress validate\ncloudflared tunnel ingress rule https://stats.vpjoshi.in\n\n# Check active connections\ncloudflared tunnel info <tunnel-id>\n\n# Restart tunnel after config change\ndocker compose restart cloudflared" }
+          ]
+        }
+      ]
+    }
+  ]
+}

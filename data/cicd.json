@@ -1,5 +1,5 @@
 {
-  "projectTitle": "CI/CD Pipeline – Self-Hosted K8s",
+  "projectTitle": "CI/CD Pipeline - Self-Hosted K8s",
   "version": "v1.0.0",
   "sections": [
     {
@@ -68,7 +68,7 @@
           "id": "ci-user",
           "title": "CI Service Account",
           "content": [
-            { "type": "header", "text": "ci-user – K8s Service Account" },
+            { "type": "header", "text": "ci-user - K8s Service Account" },
             { "type": "text", "text": "A dedicated **`ci-user` service account** was created in the `apps-prod` namespace with a **permanent token** and scoped RBAC permissions. It can apply manifests and manage deployments in `apps-prod` only — it cannot touch other namespaces, cluster resources, or secrets." },
             { "type": "code", "language": "yaml", "code": "# ci-user service account + permanent token\napiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: ci-user\n  namespace: apps-prod\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ci-user-token\n  namespace: apps-prod\n  annotations:\n    kubernetes.io/service-account.name: ci-user\ntype: kubernetes.io/service-account-token\n---\n# RBAC — scoped to apps-prod namespace only\napiVersion: rbac.authorization.k8s.io/v1\nkind: Role\nmetadata:\n  name: ci-deployer\n  namespace: apps-prod\nrules:\n  - apiGroups: [\"apps\"]\n    resources: [\"deployments\"]\n    verbs: [\"get\", \"list\", \"apply\", \"patch\", \"update\"]\n  - apiGroups: [\"\"]\n    resources: [\"services\", \"configmaps\"]\n    verbs: [\"get\", \"list\", \"apply\", \"patch\"]\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: ci-deployer-binding\n  namespace: apps-prod\nsubjects:\n  - kind: ServiceAccount\n    name: ci-user\n    namespace: apps-prod\nroleRef:\n  kind: Role\n  name: ci-deployer\n  apiGroup: rbac.authorization.k8s.io" },
             { "type": "alert", "variant": "warning", "title": "Least Privilege", "text": "The `ci-user` token is stored as a **GitHub Actions secret** (`K8S_TOKEN`). It has no cluster-admin privileges — scoped to `apps-prod` namespace only. Even if the token were compromised, an attacker could only interact with deployments in that one namespace." }
@@ -148,9 +148,9 @@
             { "type": "text", "text": "Three GitHub Actions secrets power the entire pipeline across all projects:" },
             { "type": "code", "language": "bash", "code": "# GitHub Actions Secrets (repo or org level)\nK8S_API_URL   → https://k8s-api.vpjoshi.in   (K8s API endpoint)\nK8S_TOKEN     → <ci-user permanent token>     (scoped to apps-prod)\nGITHUB_TOKEN  → auto-provided by GitHub       (GHCR push auth)" },
             { "type": "list", "items": [
-              "**`K8S_API_URL`** – The K8s API server URL. Public via Cloudflare Tunnel but requires a valid token to authenticate.",
-              "**`K8S_TOKEN`** – The `ci-user` permanent service account token. Scoped to `apps-prod` namespace only — no cluster-admin.",
-              "**`GITHUB_TOKEN`** – Automatically provided by GitHub Actions. Used to push Docker images to GHCR. No manual secret needed."
+              "**`K8S_API_URL`** - The K8s API server URL. Public via Cloudflare Tunnel but requires a valid token to authenticate.",
+              "**`K8S_TOKEN`** - The `ci-user` permanent service account token. Scoped to `apps-prod` namespace only — no cluster-admin.",
+              "**`GITHUB_TOKEN`** - Automatically provided by GitHub Actions. Used to push Docker images to GHCR. No manual secret needed."
             ]},
             { "type": "alert", "variant": "warning", "title": "insecure-skip-tls-verify", "text": "`insecure-skip-tls-verify: true` is set in the kubeconfig because the k3s API server uses a self-signed certificate. The connection is still encrypted — TLS is active, only certificate verification is skipped. For production multi-team clusters, the CA cert should be passed explicitly instead." }
           ]
@@ -161,14 +161,14 @@
           "content": [
             { "type": "header", "text": "Tech Stack" },
             { "type": "list", "items": [
-              "**GitHub Actions** – CI/CD runner, `ubuntu-latest` hosted runners.",
-              "**Docker Buildx** – Multi-platform image builds.",
-              "**GHCR (GitHub Container Registry)** – Private container image registry, free for the Joshi-labs org.",
-              "**kubectl** – Installed fresh on each runner, latest stable version.",
-              "**k3s** – Self-hosted lightweight Kubernetes cluster on the homelab server.",
-              "**Cloudflare Tunnel** – Exposes `k8s-api.vpjoshi.in` securely without open ports.",
-              "**K8s RBAC** – `ci-user` service account scoped to `apps-prod` namespace.",
-              "**Kubernetes Rolling Updates** – Zero downtime deploys with automatic rollback on failure."
+              "**GitHub Actions** - CI/CD runner, `ubuntu-latest` hosted runners.",
+              "**Docker Buildx** - Multi-platform image builds.",
+              "**GHCR (GitHub Container Registry)** - Private container image registry, free for the Joshi-labs org.",
+              "**kubectl** - Installed fresh on each runner, latest stable version.",
+              "**k3s** - Self-hosted lightweight Kubernetes cluster on the homelab server.",
+              "**Cloudflare Tunnel** - Exposes `k8s-api.vpjoshi.in` securely without open ports.",
+              "**K8s RBAC** - `ci-user` service account scoped to `apps-prod` namespace.",
+              "**Kubernetes Rolling Updates** - Zero downtime deploys with automatic rollback on failure."
             ]}
           ]
         }

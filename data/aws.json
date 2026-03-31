@@ -1,0 +1,238 @@
+{
+  "projectTitle": "AWS Deployments – Case Studies",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview",
+      "items": [
+        {
+          "id": "intro",
+          "title": "Project Overview",
+          "content": [
+            { "type": "header", "text": "AWS Deployments – Multi-Project Case Studies" },
+            { "type": "text", "text": "A collection of **production AWS deployments** across multiple projects — spanning EC2, EKS, Lambda, MSK, EFS, CloudFront, S3, SES, DynamoDB, API Gateway, Route 53, and more. Each project uses AWS differently — from a serverless auth layer on a homelab-hosted app to a fully cloud-native multi-AZ Kubernetes deployment with managed Kafka." },
+            { "type": "text", "text": "This isn't a single project — it's a **portfolio of real AWS architectures** built for actual workloads: a Netflix-style OTT platform, a real-time collaborative document editor, transactional email infrastructure, and static asset delivery at scale." },
+            { "type": "alert", "variant": "info", "title": "AWS Services Used", "text": "EC2 · EKS · Lambda · MSK (Kafka) · EFS · S3 · CloudFront · SES · DynamoDB · API Gateway · Route 53 · IAM · KEDA · HPA · Auto Scaling · Elastic Load Balancer · VPC" }
+          ]
+        },
+        {
+          "id": "philosophy",
+          "title": "Architecture Philosophy",
+          "content": [
+            { "type": "header", "text": "Architecture Philosophy" },
+            { "type": "text", "text": "Every AWS deployment here follows the same core principles — **use managed services where they add value, avoid them where they add cost without proportional benefit, and always design for failure**." },
+            { "type": "list", "items": [
+              "**Serverless for low-traffic, spiky workloads** — Lambda + API Gateway for auth scales to zero between requests. No always-on server cost for infrequent operations.",
+              "**Managed Kafka over self-hosted** — AWS MSK for SyncDocs provides 3-broker HA with zero operational overhead. Running Kafka yourself on EC2 is a full-time job.",
+              "**CloudFront everywhere** — static assets always behind CloudFront. Zero origin hits for cached content, global edge delivery, free TLS.",
+              "**Multi-AZ by default** — every production deployment spans at least 2 AZs. A single AZ outage should never take down a service.",
+              "**Nginx on EC2** — where a full K8s cluster is overkill, Nginx on EC2 handles reverse proxying, SSL termination, and rate limiting simply and cheaply.",
+              "**Self-hosted where cost matters** — the homelab handles everything that doesn't need AWS scale. AWS handles what does."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Case Study 1 – JoshiOTT",
+      "items": [
+        {
+          "id": "ott-overview",
+          "title": "JoshiOTT Overview",
+          "content": [
+            { "type": "header", "text": "Case Study 1 – JoshiOTT (ott.vpjoshi.in)" },
+            { "type": "text", "text": "A **Netflix-style OTT streaming platform** deployed on AWS. The architecture solves three hard problems simultaneously — efficient HLS video delivery via CloudFront, serverless authentication via Lambda + DynamoDB, and containerized backend scaling via EC2 with Docker Compose behind an Elastic Load Balancer." },
+            { "type": "image", "src": "/images/ott/aws_joshi_ott.jpg", "alt": "JoshiOTT AWS Architecture", "caption": "JoshiOTT AWS architecture — Route 53 → CloudFront → ELB → Auto Scaling groups across 2 AZs with Lambda auth." }
+          ]
+        },
+        {
+          "id": "ott-architecture",
+          "title": "JoshiOTT Architecture",
+          "content": [
+            { "type": "header", "text": "JoshiOTT – AWS Architecture Deep Dive" },
+            { "type": "code", "language": "bash", "code": "User Browser\n     │\n     ▼\n┌─────────────────────────────────────────────┐\n│  Route 53                                   │\n│  ott.vpjoshi.in → CloudFront distribution   │\n└────────────────────┬────────────────────────┘\n                     │\n         ┌───────────▼───────────┐\n         │  CloudFront CDN       │\n         │  - serves React SPA   │\n         │    from S3 (OAC)      │\n         │  - caches HLS chunks  │\n         │  - free TLS           │\n         └───────────┬───────────┘\n                     │\n        ┌────────────┴─────────────┐\n        │ auth requests            │ video/API requests\n        ▼                          ▼\n┌───────────────┐     ┌────────────────────────────────┐\n│  API Gateway  │     │  Elastic Load Balancer         │\n│      +        │     │  (ap-south-1)                  │\n│   Lambda      │     └──────────┬─────────────────────┘\n│               │                │\n│  validates    │     ┌──────────┴──────────┐\n│  credentials  │     │                     │\n│  → DynamoDB   │     ▼                     ▼\n│  → issues JWT │  ┌──────────┐      ┌──────────┐\n└───────────────┘  │  AZ-1a   │      │  AZ-1b   │\n                   │ Auto     │      │ Auto     │\n                   │ Scaling  │      │ Scaling  │\n                   │ Group    │      │ Group    │\n                   │          │      │          │\n                   │ EC2+     │      │ EC2+     │\n                   │ Docker   │      │ Docker   │\n                   │ Compose  │      │ Compose  │\n                   │ Node.js  │      │ Node.js  │\n                   │ HLS srv  │      │ HLS srv  │\n                   └──────────┘      └──────────┘" },
+            { "type": "header2", "text": "CloudFront + S3 (OAC)" },
+            { "type": "text", "text": "The React frontend is stored in a **private S3 bucket** — publicly inaccessible. CloudFront accesses it via **Origin Access Control (OAC)**, AWS's modern replacement for OAI. The bucket policy only allows `GetObject` from the specific CloudFront distribution — nothing else can read from the bucket." },
+            { "type": "code", "language": "json", "code": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\": \"cloudfront.amazonaws.com\"\n      },\n      \"Action\": \"s3:GetObject\",\n      \"Resource\": \"arn:aws:s3:::joshiott-frontend/*\",\n      \"Condition\": {\n        \"StringEquals\": {\n          \"AWS:SourceArn\": \"arn:aws:cloudfront::<account>:distribution/<dist-id>\"\n        }\n      }\n    }\n  ]\n}" },
+            { "type": "header2", "text": "Lambda Auth + DynamoDB" },
+            { "type": "text", "text": "Authentication is **fully serverless** — API Gateway triggers a Lambda function on login/signup. Lambda validates credentials against DynamoDB and returns a signed JWT. Scales to zero between requests — no always-on auth server." },
+            { "type": "code", "language": "bash", "code": "POST /auth/login\n     │\n     ▼\nAPI Gateway → Lambda (Node.js)\n     │\n     ├── query DynamoDB: users table\n     ├── bcrypt.compare(password, hash)\n     ├── match → jwt.sign({ userId, role }, JWT_SECRET)\n     └── return { token }\n\n# Lambda cold start: ~200ms\n# Warm invocation: ~30ms\n# Cost at 10K logins/month: ~$0.002" },
+            { "type": "header2", "text": "EC2 + Docker Compose + Nginx" },
+            { "type": "text", "text": "The Node.js HLS streaming backend runs on **EC2 instances** in Auto Scaling groups across 2 AZs. Docker Compose manages the frontend + backend containers on each instance. **Nginx** acts as the reverse proxy — handling SSL termination (for origin → ELB traffic), request routing, and rate limiting." },
+            { "type": "code", "language": "bash", "code": "# Nginx config on EC2 (simplified)\nserver {\n    listen 80;\n    server_name ott.vpjoshi.in;\n\n    # Proxy API to Node.js backend\n    location /api/ {\n        proxy_pass http://localhost:3000;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    }\n\n    # Proxy HLS stream (JWT protected in Node.js)\n    location /stream/ {\n        proxy_pass http://localhost:3000;\n        proxy_buffering off;  # streaming — no buffering\n    }\n}" },
+            { "type": "alert", "variant": "tip", "title": "HLS via CloudFront", "text": "HLS `.m3u8` playlists and `.ts` segment chunks are cached at CloudFront edge after the first request. Subsequent viewers of the same segment hit the CDN cache — zero origin hits, zero EC2 bandwidth for repeat viewers." }
+          ]
+        },
+        {
+          "id": "ott-services",
+          "title": "JoshiOTT AWS Services",
+          "content": [
+            { "type": "header", "text": "AWS Services – JoshiOTT" },
+            { "type": "list", "items": [
+              "**Route 53** – DNS routing for ott.vpjoshi.in to CloudFront.",
+              "**CloudFront** – CDN for React SPA (S3/OAC) and HLS segment caching.",
+              "**S3** – Private bucket for React frontend assets, OAC-secured.",
+              "**API Gateway** – HTTP trigger for Lambda auth handler.",
+              "**Lambda** – Serverless login/signup, credential validation, JWT issuance.",
+              "**DynamoDB** – User table — email, bcrypt password hash, userId.",
+              "**Elastic Load Balancer** – Distributes traffic across EC2 instances in 2 AZs.",
+              "**EC2 + Auto Scaling** – Node.js HLS backend with Docker Compose. Scales on CPU.",
+              "**Nginx** – Reverse proxy on EC2, request routing, rate limiting.",
+              "**IAM** – Lambda execution role (DynamoDB read), EC2 instance profile."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Case Study 2 – SyncDocs",
+      "items": [
+        {
+          "id": "syncdocs-overview",
+          "title": "SyncDocs Overview",
+          "content": [
+            { "type": "header", "text": "Case Study 2 – SyncDocs (sync-docs.vpjoshi.in)" },
+            { "type": "text", "text": "The most complex AWS deployment — a **real-time collaborative document editor** built for scale on Amazon EKS. Uses Operational Transformation for conflict resolution, AWS MSK (Managed Kafka) for decoupled write ingestion, EFS for shared multi-AZ storage, and KEDA for lag-based autoscaling." },
+            { "type": "image", "src": "/images/sync-docs/system-arch.png", "alt": "SyncDocs System Architecture", "caption": "SyncDocs full AWS architecture — CloudFront → EKS → MSK → IO Processor → EFS across 3 AZs." }
+          ]
+        },
+        {
+          "id": "syncdocs-architecture",
+          "title": "SyncDocs Architecture",
+          "content": [
+            { "type": "header", "text": "SyncDocs – AWS Architecture Deep Dive" },
+            { "type": "code", "language": "bash", "code": "Client Browser\n     │\n     ▼\n┌───────────────────────────────────────────────────┐\n│  CloudFront + S3 (OAC)                            │\n│  React/Vite SPA — edge cached, zero origin hits   │\n└────────────────────┬──────────────────────────────┘\n                     │\n        ┌────────────┴────────────┐\n        │ auth                    │ REST + WebSocket\n        ▼                         ▼\n┌──────────────┐    ┌─────────────────────────────────────────┐\n│ API Gateway  │    │       Amazon EKS (ap-south-1)           │\n│ + Lambda     │    │                                         │\n│ + DynamoDB   │    │  AZ-1a      AZ-1b      AZ-1c            │\n│ → JWT        │    │  ┌──────┐  ┌──────┐  ┌──────┐          │\n└──────────────┘    │  │Node.js  │Node.js  │Node.js│  backend │\n                    │  │ pods │  │ pods │  │ pods │  REST+WS  │\n                    │  └──┬───┘  └──┬───┘  └──┬───┘          │\n                    │     └─────────┴──────────┘              │\n                    │               │ produce                 │\n                    │  ┌────────────▼────────────┐            │\n                    │  │     AWS MSK (Kafka)      │            │\n                    │  │  3 brokers, RF=3         │            │\n                    │  │  doc.delta.ops           │            │\n                    │  │  analytics.events        │            │\n                    │  └──────────┬───────────────┘            │\n                    │             │ consume                    │\n                    │  ┌──────────┴──────────┐                │\n                    │  │                     │                │\n                    │  ▼                     ▼                │\n                    │ IO Processor      Analytics              │\n                    │ (KEDA scaled)     (KEDA scaled)          │\n                    │  │                                      │\n                    │  ▼                                      │\n                    │ Amazon EFS (ReadWriteMany PVC)           │\n                    └─────────────────────────────────────────┘" },
+            { "type": "header2", "text": "EKS Multi-AZ Setup" },
+            { "type": "text", "text": "All workloads run on **Amazon EKS across 3 AZs** (ap-south-1a/b/c). `topologySpreadConstraints` distributes pods evenly. HPA handles uneven load — AZ pod counts differ intentionally to reflect real-world asymmetric traffic. MSK sits outside EKS but inside the same VPC." },
+            { "type": "code", "language": "yaml", "code": "# topologySpreadConstraints — even pod distribution\nspec:\n  topologySpreadConstraints:\n    - maxSkew: 1\n      topologyKey: topology.kubernetes.io/zone\n      whenUnsatisfiable: DoNotSchedule\n      labelSelector:\n        matchLabels:\n          app: syncdocs-backend" },
+            { "type": "header2", "text": "AWS MSK – Managed Kafka" },
+            { "type": "text", "text": "**AWS MSK** with 3 brokers (one per AZ), replication factor 3. Two topics — `doc.delta.ops` for document change events and `analytics.events` for usage metrics. Kafka decouples write ingestion from processing — the backend publishes freely and consumers process at their own pace." },
+            { "type": "code", "language": "bash", "code": "# MSK topic config\nTopic: doc.delta.ops\n  Partitions: 12         # parallelism across IO Processor pods\n  Replication Factor: 3  # one replica per AZ broker\n  Retention: 24h         # ops older than 24h discarded\n\nTopic: analytics.events\n  Partitions: 6\n  Replication Factor: 3\n  Retention: 7d" },
+            { "type": "header2", "text": "EFS + KEDA Autoscaling" },
+            { "type": "text", "text": "**Amazon EFS** is mounted across all IO Processor pods via the EFS CSI driver with a `ReadWriteMany` PVC — any pod in any AZ reads and writes the same document files. **KEDA** watches the Kafka consumer group lag and scales IO Processor pods up/down automatically." },
+            { "type": "code", "language": "yaml", "code": "# KEDA ScaledObject — scale on Kafka lag\napiVersion: keda.sh/v1alpha1\nkind: ScaledObject\nmetadata:\n  name: io-processor-scaler\nspec:\n  scaleTargetRef:\n    name: io-processor\n  minReplicaCount: 1\n  maxReplicaCount: 10\n  triggers:\n    - type: kafka\n      metadata:\n        topic: doc.delta.ops\n        bootstrapServers: <msk-endpoint>:9092\n        consumerGroup: io-processor-group\n        lagThreshold: '100'   # scale up if lag > 100 messages" },
+            { "type": "alert", "variant": "tip", "title": "Why EFS over S3?", "text": "S3 is eventually consistent for overwrites — not safe for high-frequency document state updates from multiple pods. **EFS gives POSIX filesystem semantics** with strong consistency. IO Processor pods across all 3 AZs write to the same files without coordination overhead." }
+          ]
+        },
+        {
+          "id": "syncdocs-services",
+          "title": "SyncDocs AWS Services",
+          "content": [
+            { "type": "header", "text": "AWS Services – SyncDocs" },
+            { "type": "list", "items": [
+              "**CloudFront + S3 (OAC)** – React/Vite SPA served from private S3 via CloudFront.",
+              "**API Gateway + Lambda + DynamoDB** – Serverless auth layer, JWT issuance.",
+              "**Amazon EKS** – Multi-AZ Kubernetes cluster across ap-south-1a/b/c.",
+              "**AWS MSK** – Managed Kafka, 3 brokers, RF=3, two topics.",
+              "**Amazon EFS** – ReadWriteMany shared filesystem via CSI driver.",
+              "**KEDA** – Kafka lag-based autoscaling for IO Processor and Analytics pods.",
+              "**HPA** – CPU/memory-based autoscaling for backend API pods.",
+              "**VPC** – MSK and EKS in the same VPC, no public network hop for Kafka traffic.",
+              "**IAM** – EKS node roles, MSK access policies, EFS mount permissions.",
+              "**Route 53** – DNS for sync-docs.vpjoshi.in."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Case Study 3 – Email (SES)",
+      "items": [
+        {
+          "id": "ses-overview",
+          "title": "SES Email Infrastructure",
+          "content": [
+            { "type": "header", "text": "Case Study 3 – Transactional Email via AWS SES" },
+            { "type": "text", "text": "A **serverless transactional email infrastructure** built on AWS SES (Simple Email Service) — handling both inbound and outbound email for multiple domains. Contact form submissions, automated notifications, and inbound email routing all run through SES with Lambda processing and Cloudflare Email Routing for forwarding." },
+            { "type": "alert", "variant": "info", "title": "Email Addresses", "text": "**Sending** – admin@unetify.in (transactional emails, notifications) · **Receiving** – contact@unetify.in (inbound contact form), contact@joshistudio.com (Joshi Studio enquiries) · All routed via SES + Cloudflare Email Routing." }
+          ]
+        },
+        {
+          "id": "ses-architecture",
+          "title": "SES Architecture",
+          "content": [
+            { "type": "header", "text": "SES Architecture" },
+            { "type": "code", "language": "bash", "code": "# OUTBOUND — sending transactional email\nApp / Lambda\n     │\n     │ SES SendEmail API\n     ▼\n┌─────────────────────────────────┐\n│  AWS SES (ap-south-2)           │\n│  From: admin@unetify.in         │\n│  DKIM signed                    │\n│  SPF verified                   │\n│  DMARC policy                   │\n└────────────────┬────────────────┘\n                 │\n                 ▼\n         Recipient inbox\n\n\n# INBOUND — receiving contact form emails\nSender → contact@unetify.in\n     │\n     ▼\n┌─────────────────────────────────┐\n│  Cloudflare Email Routing       │\n│  contact@unetify.in             │\n│  → forward to Gmail             │\n└─────────────────────────────────┘\n\n\n# PROGRAMMATIC INBOUND (SES receipt rules)\nSender → contact@joshistudio.com\n     │\n     ▼\n┌─────────────────────────────────┐\n│  SES Receipt Rule               │\n│  → store raw email in S3        │\n│  → trigger Lambda               │\n└────────────────┬────────────────┘\n                 │\n                 ▼\n         Lambda processes email\n         → parse sender, subject, body\n         → forward / store / notify" },
+            { "type": "header2", "text": "SES Configuration – Outbound" },
+            { "type": "text", "text": "SES is configured in **ap-south-2 (Hyderabad)** — the closest AWS region to India, minimising latency for outbound email. Domain verification, DKIM signing, and SPF records are all configured via DNS (Cloudflare)." },
+            { "type": "code", "language": "bash", "code": "# DNS records for SES domain verification (Cloudflare)\n\n# SPF — authorize SES to send on behalf of unetify.in\nunetify.in TXT \"v=spf1 include:amazonses.com ~all\"\n\n# DKIM — SES-generated CNAME records (3 selectors)\n<selector1>._domainkey.unetify.in CNAME <selector1>.dkim.amazonses.com\n<selector2>._domainkey.unetify.in CNAME <selector2>.dkim.amazonses.com\n<selector3>._domainkey.unetify.in CNAME <selector3>.dkim.amazonses.com\n\n# DMARC — policy for failed SPF/DKIM\n_dmarc.unetify.in TXT \"v=DMARC1; p=quarantine; rua=mailto:admin@unetify.in\"" },
+            { "type": "header2", "text": "Sending via Lambda" },
+            { "type": "code", "language": "javascript", "code": "// Send transactional email via SES from Lambda\nconst { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');\n\nconst ses = new SESClient({ region: 'ap-south-2' });\n\nexports.handler = async (event) => {\n  const { to, subject, body } = event;\n\n  await ses.send(new SendEmailCommand({\n    Source: 'admin@unetify.in',\n    Destination: { ToAddresses: [to] },\n    Message: {\n      Subject: { Data: subject },\n      Body: {\n        Html: { Data: body },\n        Text: { Data: body.replace(/<[^>]*>/g, '') }\n      }\n    }\n  }));\n\n  return { statusCode: 200, body: 'Email sent' };\n};" },
+            { "type": "alert", "variant": "info", "title": "SES Pricing", "text": "SES costs **$0.10 per 1,000 emails** sent — essentially free at startup scale. Compared to SendGrid ($19.95/month for 50K emails) or Mailgun ($35/month), SES is orders of magnitude cheaper for transactional volume under 100K/month." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Case Study 4 – S3 & Static Hosting",
+      "items": [
+        {
+          "id": "s3-overview",
+          "title": "S3 Static Asset Strategy",
+          "content": [
+            { "type": "header", "text": "Case Study 4 – S3 Static Hosting & Asset Delivery" },
+            { "type": "text", "text": "S3 is used across multiple projects as the **static asset backbone** — React SPAs, HLS video segments, document assets, and build artifacts all flow through S3 + CloudFront. Each project uses S3 differently depending on its access pattern." },
+            { "type": "code", "language": "bash", "code": "# S3 buckets across projects\n\njoshiott-frontend          → React SPA (private, OAC)\n  └── CloudFront distribution\n  └── served at ott.vpjoshi.in\n\njoshiott-hls               → HLS video segments (private, signed URLs)\n  └── CloudFront with presigned URL policy\n  └── .m3u8 playlists + .ts chunks\n\nsyncdocs-frontend          → React/Vite SPA (private, OAC)\n  └── CloudFront distribution\n  └── served at sync-docs.vpjoshi.in\n\nsyncdocs-uploads           → document assets (private)\n  └── accessed via presigned GET URLs from EKS pods\n\nses-inbound                → raw inbound email storage\n  └── SES receipt rules write here\n  └── Lambda reads and processes" },
+            { "type": "header2", "text": "CloudFront Cache Strategy" },
+            { "type": "text", "text": "Cache behavior is configured per path pattern — SPA index files get short TTLs (must revalidate on deploy), static assets get long TTLs (content-hashed filenames ensure cache busting), and HLS segments get medium TTLs (segment content never changes once written)." },
+            { "type": "code", "language": "bash", "code": "# CloudFront cache behaviors\n\n/index.html\n  Cache-Control: no-cache, no-store\n  TTL: 0  ← always revalidate (new deploy = new HTML)\n\n/assets/*  (JS, CSS — content-hashed by Vite)\n  Cache-Control: public, max-age=31536000, immutable\n  TTL: 1 year  ← safe, filename changes on every build\n\n/stream/*.m3u8  (HLS playlist)\n  Cache-Control: public, max-age=300\n  TTL: 5 min  ← short, playlist may update for live streams\n\n/stream/*.ts  (HLS segments)\n  Cache-Control: public, max-age=86400\n  TTL: 24h  ← segments are immutable once written" },
+            { "type": "alert", "variant": "tip", "title": "Cache Invalidation on Deploy", "text": "On every GitHub Actions deploy, a CloudFront invalidation is triggered for `/*` on the frontend distribution — forcing edge nodes to fetch the new `index.html`. JS/CSS assets don't need invalidation because Vite content-hashes their filenames on every build." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Cross-Cutting Concerns",
+      "items": [
+        {
+          "id": "iam",
+          "title": "IAM & Security",
+          "content": [
+            { "type": "header", "text": "IAM – Least Privilege Across All Projects" },
+            { "type": "text", "text": "Every AWS resource uses a **dedicated IAM role with minimal permissions**. No shared roles across projects, no broad `*` policies, no hardcoded access keys in code — credentials are always injected via environment variables or instance profiles." },
+            { "type": "code", "language": "json", "code": "// Lambda auth role — DynamoDB read only\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"dynamodb:GetItem\",\n        \"dynamodb:Query\"\n      ],\n      \"Resource\": \"arn:aws:dynamodb:ap-south-1:*:table/users\"\n    }\n  ]\n}" },
+            { "type": "code", "language": "json", "code": "// SES Lambda role — send email only\n{\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\"ses:SendEmail\", \"ses:SendRawEmail\"],\n      \"Resource\": \"arn:aws:ses:ap-south-2:*:identity/unetify.in\"\n    }\n  ]\n}" },
+            { "type": "alert", "variant": "warning", "title": "No Hardcoded Credentials", "text": "Zero hardcoded AWS credentials anywhere in the codebase. Lambda functions use execution roles (automatically assumed). EC2 instances use instance profiles. GitHub Actions uses OIDC federation where possible, secrets otherwise. Every access key rotation is a config change, not a code change." }
+          ]
+        },
+        {
+          "id": "nginx-on-ec2",
+          "title": "Nginx on EC2",
+          "content": [
+            { "type": "header", "text": "Nginx on EC2 – Reverse Proxy Layer" },
+            { "type": "text", "text": "For EC2-based deployments (JoshiOTT), **Nginx** sits between the ELB and the Docker containers as a reverse proxy. It handles request routing to the correct container port, adds security headers, implements rate limiting, and manages graceful connection handling for WebSocket streams." },
+            { "type": "code", "language": "bash", "code": "# Nginx responsibilities on EC2\n\n1. Reverse proxy → Docker containers\n   :80/api/*    → localhost:3000  (Node.js backend)\n   :80/stream/* → localhost:3000  (HLS server)\n   :80/*        → localhost:5173  (React frontend, dev)\n\n2. Security headers\n   X-Frame-Options: DENY\n   X-Content-Type-Options: nosniff\n   Referrer-Policy: strict-origin\n\n3. Rate limiting\n   limit_req_zone $binary_remote_addr zone=api:10m rate=30r/m;\n   limit_req zone=api burst=10 nodelay;\n\n4. WebSocket proxying\n   proxy_http_version 1.1;\n   proxy_set_header Upgrade $http_upgrade;\n   proxy_set_header Connection 'upgrade';\n\n5. Gzip compression\n   gzip on;\n   gzip_types application/json text/plain application/javascript;" },
+            { "type": "alert", "variant": "info", "title": "Nginx vs ALB", "text": "The ELB (ALB) handles cross-AZ load balancing and health checks. Nginx on each EC2 instance handles per-request routing, headers, and rate limiting. This separation keeps the ALB config simple and puts fine-grained control at the instance level where it's easier to iterate." }
+          ]
+        },
+        {
+          "id": "cost-overview",
+          "title": "Cost Overview",
+          "content": [
+            { "type": "header", "text": "AWS Cost Overview" },
+            { "type": "text", "text": "AWS is used deliberately — only where it provides value that justifies the cost. The homelab handles everything else." },
+            { "type": "list", "items": [
+              "**CloudFront + S3** – ~$1-3/month per project. Essentially free at startup traffic levels.",
+              "**Lambda** – Free tier covers ~1M invocations/month. Auth Lambda costs ~$0/month at current usage.",
+              "**DynamoDB** – Free tier (25GB, 25 WCU/RCU). Costs ~$0/month for user tables.",
+              "**SES** – $0.10/1000 emails. ~$0-1/month at current volume.",
+              "**EC2 (JoshiOTT)** – t3.micro on reserved pricing ~$8/month.",
+              "**EKS (SyncDocs)** – $0.10/hour cluster fee + EC2 nodes. ~$80-120/month at dev scale.",
+              "**MSK (SyncDocs)** – kafka.t3.small, 3 brokers. ~$50/month.",
+              "**Route 53** – $0.50/hosted zone/month."
+            ]},
+            { "type": "alert", "variant": "tip", "title": "Homelab vs AWS", "text": "EKS + MSK for SyncDocs is the most expensive setup — ~$130-170/month. Everything else combined is under $20/month. The homelab saves ~₹10,000/month by self-hosting Grafana, n8n, LLaMA, Postgres, and PocketBase that would otherwise run on AWS." }
+          ]
+        },
+        {
+          "id": "full-services",
+          "title": "Full AWS Services Index",
+          "content": [
+            { "type": "header", "text": "Full AWS Services Index" },
+            { "type": "code", "language": "bash", "code": "# Compute\nEC2          → JoshiOTT backend (Docker Compose, Auto Scaling)\nEKS          → SyncDocs backend (multi-AZ K8s, 3 AZs)\nLambda       → Auth handlers (JoshiOTT, SyncDocs), SES processor\n\n# Storage\nS3           → Frontend SPAs, HLS segments, SES inbound, build artifacts\nEFS          → SyncDocs IO Processor shared document storage\nDynamoDB     → User tables (JoshiOTT, SyncDocs)\n\n# Networking\nCloudFront   → CDN for all React SPAs and HLS delivery\nELB (ALB)    → JoshiOTT load balancing across 2 AZs\nAPI Gateway  → HTTP trigger for Lambda auth\nRoute 53     → DNS for ott.vpjoshi.in, sync-docs.vpjoshi.in\nVPC          → SyncDocs — EKS + MSK in same private VPC\n\n# Messaging\nMSK (Kafka)  → SyncDocs: doc.delta.ops + analytics.events\nSES          → Transactional email (admin@unetify.in)\n               Inbound routing (contact@joshistudio.com)\n\n# Scaling\nAuto Scaling → EC2 groups for JoshiOTT (CPU-based)\nHPA          → EKS pods for SyncDocs backend (CPU/memory)\nKEDA         → EKS pods for IO Processor + Analytics (Kafka lag)\n\n# Security & Identity\nIAM          → Per-service roles, least privilege, no shared credentials\nOAC          → CloudFront → S3 private bucket access\n\n# Regions\nap-south-1   → Primary (Mumbai) — EKS, MSK, EC2, S3, DynamoDB\nap-south-2   → SES (Hyderabad) — lowest latency for Indian email delivery" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -76,7 +76,7 @@ npm run build
 ## 🔗 Connect with Me
 - **Portfolio:** [vpjoshi.in](https://vpjoshi.in)
 - **GitHub:** [@Joshi-labs](https://github.com/Joshi-labs)
-- **Email:** hello@vpjoshi.in
+- **Email:** contact@vpjoshi.in
 
 ---
-*Built with ❤️ by Vishwash Prasad Joshi. Live and serving for 2 years.*
+*Built with ❤️ by Vishwash Prasad Joshi. Live and serving for 6 months*

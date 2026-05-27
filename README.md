@@ -2,7 +2,7 @@
 ### High-Performance Documentation Engine for Cloud & DevOps Architectures
 
 [![Live Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge)](https://docs.vpjoshi.in)
-[![Longevity](https://img.shields.io/badge/Serving_Since-2024-blue?style=for-the-badge)](https://docs.vpjoshi.in)
+[![Longevity](https://img.shields.io/badge/Serving_Since-2025-blue?style=for-the-badge)](https://docs.vpjoshi.in)
 [![Creator](https://img.shields.io/badge/Creator-VP_Joshi-orange?style=for-the-badge)](https://vpjoshi.in)
 
 **[docs.vpjoshi.in](https://docs.vpjoshi.in)** is a lightweight, CI/CD-integrated documentation server built to house the technical blueprints, architecture diagrams, and post-mortems of every Cloud, DevOps, and SDE project in my portfolio.

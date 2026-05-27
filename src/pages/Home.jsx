@@ -1,150 +1,231 @@
-import React, { useState, useEffect } from 'react';
-import ProjectCard from '../components/ProjectCard';
-import { ArrowDown, Github, Linkedin, Twitter, Mail } from 'lucide-react';
-import FadeInSection from '../components/FadeInSection';
-import Navbar from '../components/Navbar';
+import React, { useState, useEffect, useRef } from 'react';
+import { Github, Linkedin, Mail, ExternalLink, ArrowRight, FileText, Terminal, Cpu } from 'lucide-react';
 
-const Home = () => {
-  const [data, setData] = useState({ featured: [], hackathon: [] });
-  const [loading, setLoading] = useState(true);
+// ==========================================
+// 1. PROJECT DATA
+// ==========================================
+const PROJECTS = [
+  { id: 'ott', title: 'Joshi OTT', description: 'A Netflix-style OTT platform with adaptive HLS streaming, serverless AWS Lambda auth, and DynamoDB.', badge: 'core' },
+  { id: 'server', title: 'Self Hosted Server', description: 'Self-hosted k3s homelab running LLaMA 3.2, n8n, Postgres, and Grafana — saving ₹10,000/month.', badge: 'core' },
+  { id: 'orbit', title: 'Container Orchestrator', description: 'Lightweight container orchestrator built from scratch in Go — distribute Docker containers without K8s.', badge: 'core' },
+  { id: 'sync-docs', title: 'Doc Collab Tool', description: 'Real-time collaborative docs, built for scale on AWS.', badge: 'core' },
+  { id: 's3-drive', title: 'S3 Drive', description: 'A self-hosted Google Drive alternative built on AWS S3 and Go.', badge: 'core' },
+  { id: 'os', title: 'Custom OS', description: 'Custom Linux OS for electric vehicles, built on Arch with a React GUI.', badge: 'core' },
+
+  { id: 'aws', title: 'AWS Infrastructure', description: 'Production AWS architectures across EKS, Lambda, MSK, SES, CloudFront, and EC2 — spanning multiple real projects.', badge: 'devops' },
+  { id: 'cicd', title: 'CI/CD Pipelines', description: 'GitHub Actions CI/CD pipeline deploying to a self-hosted k3s cluster — build, push to GHCR, and rolling deploy on [prod] commits.', badge: 'devops' },
+  { id: 'cloudflare', title: 'Cloudflare Tunnels', description: 'Zero-trust homelab ingress — 12 services across 3 domains, no open ports, automatic TLS, 350ms latency.', badge: 'devops' },
+  { id: 'monitoring', title: 'Monitoring Tool / Stack', description: 'Self-hosted Grafana + Prometheus observability stack: monitoring CPU, RAM, power draw, and network with a public dashboard.', badge: 'devops' },
+  
+  { id: 'hackathon1', title: 'AI Ticketing System', description: 'A low cost ticketing system that uses multilingual AI to generate tickets and manage them.', badge: 'hackathon' },
+  { id: 'hackathon2', title: 'Dark Web Surveillance Tool', description: 'A tool that uses AI to detect and monitor dark web activities. It costs nothing to run.', badge: 'hackathon' },
+  { id: 'hackathon3', title: 'Legal AI Assistant', description: 'Fine-tuned chatbot for Dept. of Justice · Built at SIH 2024', badge: 'hackathon' }
+];
+
+const WhatsappIcon = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+  </svg>
+);
+
+// ==========================================
+// 2. COMPONENTS
+// ==========================================
+const FadeInSection = ({ children, delay = 0 }) => {
+  const [isVisible, setVisible] = useState(false);
+  const domRef = useRef();
 
   useEffect(() => {
-    fetch('/data/projects.json')
-      .then(res => res.json())
-      .then(jsonData => {
-        setData(jsonData);
-        setLoading(false);
-      })
-      .catch(err => console.error(err));
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(domRef.current);
+        }
+      });
+    });
+    const currentRef = domRef.current;
+    if (currentRef) observer.observe(currentRef);
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
   }, []);
 
-  const handleScrollClick = (e) => {
-    e.preventDefault();
-    const element = document.getElementById('featured');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
-    // Base Background: Neutral Dark Gray (Slate-950)
-    <div className="relative min-h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans selection:bg-blue-500/30">
-        <Navbar data={{ projectTitle: "JoshiDocs", version: "" }} setIsSidebarOpen={() => {}} />
-      
-      {/* --- PROFESSIONAL BACKGROUND LAYERS --- */}
-      {/* 1. Subtle Dot Grid */}
-      <div className="absolute inset-0 bg-grid-white/[0.05] pointer-events-none"></div>
-      
-      {/* 2. Vignette (Darkens edges to focus on content) */}
-      <div className="absolute inset-0 bg-vignette pointer-events-none"></div>
-
-      {/* 3. Top Glow (Subtle Blue Ambient Light) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none z-0"></div>
-
-      {/* --- MAIN CONTENT --- */}
-      <div className="relative z-10">
-        
-        {/* HERO SECTION */}
-        <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-40 mb-20">
-          
-          {/* Professional Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 rounded-full border border-slate-800 bg-slate-900/50 backdrop-blur-sm text-slate-400 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Available for Summer 2026 Internships
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight mb-6">
-            VP Joshi
-          </h1>
-          
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-            Cloud Engineer & Full Stack Developer. <br />
-            Specializing in <span className="text-slate-200 font-medium">Distributed Systems</span> and <span className="text-slate-200 font-medium">Scalable Architecture</span>.
-          </p>
-          
-          <div className="flex gap-4 mb-16">
-            <a href="#featured" onClick={handleScrollClick} className="px-6 py-3 rounded-lg bg-white text-black font-semibold hover:bg-slate-200 transition-colors">
-              View Work
-            </a>
-            <a href="https://github.com/yourusername" target="_blank" rel="noreferrer" className="px-6 py-3 rounded-lg bg-slate-900 border border-slate-800 text-white font-medium hover:bg-slate-800 transition-colors">
-              GitHub
-            </a>
-          </div>
-        </section>
-
-        {/* SECTION 1: FEATURED PROJECTS */}
-        <section id="featured" className="max-w-7xl mx-auto px-6 py-20">
-          <FadeInSection>
-            <div className="flex items-center justify-between mb-12 border-b border-slate-800 pb-4">
-              <h2 className="text-2xl font-semibold text-white">Featured Projects</h2>
-              <span className="text-sm text-slate-500 hidden md:block">Architecture & Engineering</span>
-            </div>
-          </FadeInSection>
-          
-          {loading ? (
-             <div className="h-64 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-600 border-t-transparent rounded-full animate-spin"></div></div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {data.featured.map((proj, index) => (
-                <FadeInSection key={proj.id} delay={index * 100}>
-                   <ProjectCard project={proj} />
-                </FadeInSection>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* SECTION 2: HACKATHON */}
-        <section className="max-w-7xl mx-auto px-6 py-20 pb-32">
-          <FadeInSection>
-            <div className="flex items-center justify-between mb-12 border-b border-slate-800 pb-4">
-              <h2 className="text-2xl font-semibold text-white">Hackathon & Experiments</h2>
-              <span className="text-sm text-slate-500 hidden md:block">Rapid Prototyping</span>
-            </div>
-          </FadeInSection>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {data.hackathon?.map((proj, index) => (
-               <FadeInSection key={proj.id} delay={index * 100}>
-                 <ProjectCard project={proj} />
-               </FadeInSection>
-            ))}
-          </div>
-        </section>
-
-        {/* FOOTER */}
-        <FadeInSection>
-          <footer className="border-t border-slate-900 bg-[#020617] py-16">
-            <div className="max-w-4xl mx-auto px-6 text-center">
-              <h3 className="text-xl font-semibold text-white mb-6">Let's Connect</h3>
-              <div className="flex justify-center gap-6 mb-8">
-                <SocialLink href="#" icon={<Github size={20} />} />
-                <SocialLink href="#" icon={<Linkedin size={20} />} />
-                <SocialLink href="#" icon={<Twitter size={20} />} />
-                <SocialLink href="mailto:hello@vpjoshi.in" icon={<Mail size={20} />} />
-              </div>
-              <p className="text-slate-600 text-sm">
-                © 2024 VP Joshi. <br />
-              </p>
-            </div>
-          </footer>
-        </FadeInSection>
-
-      </div>
+    <div
+      ref={domRef}
+      className={`transition-all duration-500 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
     </div>
   );
 };
 
-// Simplified Social Link for Professional Look
-const SocialLink = ({ href, icon }) => (
-  <a 
-    href={href} 
-    target="_blank" 
-    rel="noopener noreferrer"
-    className="p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition-all"
-  >
-    {icon}
-  </a>
-);
+const ProjectListItem = ({ project }) => {
+  const getBadgeStyle = (badge) => {
+    switch(badge) {
+      case 'core': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'devops': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      case 'hackathon': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+      default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+    }
+  };
+
+  const getIcon = (badge) => {
+    switch(badge) {
+      case 'core': return <Cpu size={20} />;
+      case 'devops': return <Terminal size={20} />;
+      default: return <FileText size={20} />;
+    }
+  };
+
+  return (
+    <a 
+      href={`#/${project.id}`} 
+      // Added h-full and changed sm:items-center to sm:items-start so the icon stays at the top
+      className="group flex flex-col sm:flex-row sm:items-start gap-4 p-6 bg-slate-900/40 border border-slate-800 rounded-xl hover:bg-slate-800/80 hover:border-slate-600 transition-all duration-300 h-full"
+    >
+      {/* Icon Box */}
+      <div className="hidden sm:flex flex-shrink-0 items-center justify-center w-12 h-12 mt-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-colors">
+        {getIcon(project.badge)}
+      </div>
+
+      {/* Content */}
+      <div className="flex-grow min-w-0 flex flex-col justify-center">
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          {/* Removed truncate so title can wrap if needed */}
+          <h3 className="text-base font-semibold text-slate-100 group-hover:text-white leading-snug">
+            {project.title}
+          </h3>
+          <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase border rounded-md ${getBadgeStyle(project.badge)}`}>
+            {project.badge}
+          </span>
+        </div>
+        {/* Removed truncate and added leading-relaxed for better readability on long text */}
+        <p className="text-sm text-slate-400 leading-relaxed">
+          {project.description}
+        </p>
+      </div>
+
+      {/* Arrow Indicator */}
+      <div className="hidden sm:flex flex-shrink-0 items-center self-center text-slate-600 group-hover:text-blue-400 transition-colors group-hover:translate-x-1 duration-300">
+        <ArrowRight size={20} />
+      </div>
+    </a>
+  );
+};
+
+// ==========================================
+// 3. MAIN PAGE
+// ==========================================
+const Home = () => {
+  const coreProjects = PROJECTS.filter(p => p.badge === 'core');
+  const devopsProjects = PROJECTS.filter(p => p.badge === 'devops');
+  const hackathonProjects = PROJECTS.filter(p => p.badge === 'hackathon');
+
+  const scrollToSection = (e, targetId) => {
+    e.preventDefault();
+    const element = document.getElementById(targetId);
+    if (element) {
+      const yOffset = -80; 
+      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  const ProjectSection = ({ id, title, projects }) => (
+    <section id={id} className="max-w-5xl mx-auto px-6 py-12">
+      <FadeInSection>
+        <div className="mb-6 border-b border-slate-800 pb-4">
+          <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
+        </div>
+      </FadeInSection>
+      
+      {/* Grid items will automatically stretch to the tallest item in the row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+        {projects.map((proj, index) => (
+          <FadeInSection key={proj.id} delay={(index % 4) * 50} className="h-full">
+             <ProjectListItem project={proj} />
+          </FadeInSection>
+        ))}
+      </div>
+    </section>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col">
+      
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <span className="text-white font-bold tracking-tight flex items-center gap-3">
+            {/* Favicon inserted here */}
+            <img src="/favicon.png" alt="Logo" className="w-6 h-6 object-contain rounded-sm" />
+            JoshiDocs
+          </span>
+          <a 
+            href="https://vpjoshi.in" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 bg-slate-900 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+          >
+            Portfolio <ExternalLink size={14} />
+          </a>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="flex-grow pb-20">
+        {/* Hero */}
+        <section className="px-6 max-w-4xl mx-auto pt-24 pb-12 text-center">
+          <FadeInSection>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
+              Project Documentation
+            </h1>
+            <p className="text-slate-400 text-lg mb-10 max-w-2xl mx-auto">
+              Internal wiki and technical documentation for architecture, distributed systems, and rapid prototyping.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <a href="#core" onClick={(e) => scrollToSection(e, 'core')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">Core Systems</a>
+              <a href="#devops" onClick={(e) => scrollToSection(e, 'devops')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">DevOps</a>
+              <a href="#hackathon" onClick={(e) => scrollToSection(e, 'hackathon')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">Hackathons</a>
+            </div>
+          </FadeInSection>
+        </section>
+
+        {/* Project Sections */}
+        <ProjectSection id="core" title="Core Engineering" projects={coreProjects} />
+        <ProjectSection id="devops" title="DevOps & Infrastructure" projects={devopsProjects} />
+        <ProjectSection id="hackathon" title="Hackathons & Prototyping" projects={hackathonProjects} />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800 bg-slate-950 py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-slate-500 text-sm font-medium">
+            © {new Date().getFullYear()} VP Joshi. All rights reserved.
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <a href="https://github.com/Joshi-labs" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-white transition-colors" title="GitHub">
+              <Github size={20} />
+            </a>
+            <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-400 transition-colors" title="LinkedIn">
+              <Linkedin size={20} />
+            </a>
+            <a href="mailto:hello@vpjoshi.in" className="text-slate-500 hover:text-emerald-400 transition-colors" title="Email">
+              <Mail size={20} />
+            </a>
+            <a href="https://wa.me/yourphonenumber" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-green-500 transition-colors" title="WhatsApp">
+              <WhatsappIcon size={20} />
+            </a>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  );
+};
 
 export default Home;

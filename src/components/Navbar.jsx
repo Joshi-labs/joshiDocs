@@ -1,5 +1,5 @@
 import React from "react";
-import { Menu, Book, ArrowUpRight } from "lucide-react";
+import { Menu, Book, ArrowUpRight, ExternalLink } from "lucide-react";
 
 const Navbar = ({ data, setIsSidebarOpen }) => (
   <header className="fixed top-0 left-0 right-0 h-16 bg-[#0b0c15]/80 backdrop-blur-md border-b border-slate-800 z-50 shadow-xl">
@@ -15,8 +15,13 @@ const Navbar = ({ data, setIsSidebarOpen }) => (
            JoshiDocs
         </h1>
       </div>
-      <a href="https://vpjoshi.in" target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex items-center gap-2 text-sm font-medium px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-colors">
-        Portfolio <ArrowUpRight size={16} />
+          <a 
+            href="https://vpjoshi.in" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 bg-slate-900 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+          >
+            Portfolio <ExternalLink size={14} />
       </a>
       <div className="lg:hidden w-8" />
     </div>

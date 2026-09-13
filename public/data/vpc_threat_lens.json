@@ -1,0 +1,161 @@
+{
+  "projectTitle": "AI-Powered SOC Investigation System",
+  "version": "v1.0.0",
+  "sections": [
+    {
+      "category": "Overview & Architecture",
+      "items": [
+        {
+          "id": "project-idea",
+          "title": "The Core Idea",
+          "content": [
+            { "type": "header", "text": "AI-Driven Cybersecurity Investigation System" },
+            { "type": "text", "text": "Welcome to the automated threat hunting documentation. The goal of this project was to build an intelligent engine capable of processing AWS VPC Flow Logs, parsing out malicious behavior, indexing them semantically, and letting security analysts hunt threats using pure natural language." },
+            { "type": "alert", "variant": "tip", "title": "What exactly does it do?", "text": "Think of it as a junior SOC Analyst, a lightweight SIEM, and a RAG-powered threat investigation platform rolled into one containerized package." },
+            { "type": "text", "text": "By marrying cloud networking data with vector databases and LLM orchestration, we move past rigid regex-based alerts and enter the realm of semantic security context." }
+          ]
+        },
+        {
+          "id": "system-architecture",
+          "title": "Architecture Blueprint",
+          "content": [
+            { "type": "header", "text": "How Data Flows Through the Machine" },
+            { "type": "text", "text": "Building this required stitching together data collection, an event parsing layer, embedding generation, a vector catalog, and an AI orchestration pipeline. Here is the aerial view of how the system infrastructure is configured inside AWS:" },
+            { "type": "image", "src": "/images/vpctl/cloud.png", "alt": "AWS Cloud Infrastructure Setup", "caption": "Cloud Infrastructure Layout: Capturing telemetry straight from the source." },
+            { "type": "header2", "text": "The End-to-End Log Pipeline" },
+            { "type": "text", "text": "From raw packet metadata to a natural language UI response, this is how logs are ingested, transformed, and queried:" },
+            { "type": "image", "src": "/images/vpctl/system.png", "alt": "System Processing Pipeline", "caption": "The Data & RAG Pipeline: From Cloud Logs to LLM Insights." },
+            { "type": "list", "items": [
+              "**1. Ingestion:** Traffic hits the VPC -> Flow Logs stream to an S3 Bucket.",
+              "**2. Normalization:** Logs are fetched, unzipped, and converted into structured JSONL data.",
+              "**3. Windowing:** Chronological log streams get bundled into tight 60-second time-windows.",
+              "**4. Correlation Engine:** Low-level entries are correlated into high-level security events.",
+              "**5. Semantic Vectorization:** Events are embedded using all-MiniLM-L6-v2 and pushed to ChromaDB.",
+              "**6. Agentic Querying:** The front-end accepts raw questions, transforms them into structured queries, retrieves context, and formats an analysis report."
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Data Engineering",
+      "items": [
+        {
+          "id": "aws-telemetry",
+          "title": "VPC Flow Logs Deep-Dive",
+          "content": [
+            { "type": "header", "text": "Deconstructing Network Telemetry" },
+            { "type": "text", "text": "VPC Flow Logs are the source of truth for network patterns, tracking inbound, outbound, accepted, and rejected traffic passing through network interfaces." },
+            { "type": "text", "text": "Instead of chasing raw text files, we normalize every line item into clean JSON blocks to look exactly like this payload structure:" },
+            { "type": "code", "language": "json", "code": "{\n  \"srcaddr\": \"146.88.241.132\",\n  \"dstaddr\": \"172.31.5.247\",\n  \"dstport\": \"22\",\n  \"packets\": \"5\",\n  \"action\": \"ACCEPT\"\n}" },
+            { "type": "alert", "variant": "info", "title": "Infrastructure Blueprint", "text": "Our live test-bed deployed an NGINX server on a public EC2 endpoint inside a dedicated VPC. Aggregation windows were dialed down to 1-5 minutes to push rapid delivery pipelines into S3." }
+          ]
+        },
+        {
+          "id": "traffic-generation",
+          "title": "Simulating Cyber Warfare",
+          "content": [
+            { "type": "header", "text": "Generating Background Traffic" },
+            { "type": "text", "text": "A SOC system is only as good as the chaos it can parse. To test the threshold limits, custom background workers generated parallel streams of traffic types across the network:" },
+            { "type": "list", "items": [
+              "**Normal Traffic:** Standard HTTP GET/POST routines, API calls, and routine microservice health checks.",
+              "**Malicious Traffic:** Bruteforce SSH scripts, widespread horizontal port scans, artificial volumetric bandwidth spikes, and sweeping firewall rejections."
+            ]},
+            { "type": "header2", "text": "The SSH Attack Injector Script" },
+            { "type": "text", "text": "To beef up our datasets with edge-cases, we wrote inject_ssh_attack.py to seamlessly blend malicious patterns into existing telemetry streams with random IPs, shifting counts, and variable intervals:" },
+            { "type": "code", "language": "python", "code": "# Synthetic SSH Intrusion Injection Snippet\nimport random\nimport time\n\ndef generate_malicious_ssh(target_ip):\n    attacker_ip = f\"{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}\"\n    timestamp = int(time.time())\n    log_entry = {\n        \"srcaddr\": attacker_ip,\n        \"dstaddr\": target_ip,\n        \"dstport\": \"22\",\n        \"packets\": str(random.randint(20, 100)),\n        \"action\": \"REJECT\",\n        \"start\": timestamp\n    }\n    return log_entry" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Correlation & Analytics",
+      "items": [
+        {
+          "id": "event-generation",
+          "title": "Event Generation Layer",
+          "content": [
+            { "type": "header", "text": "From Packets to Security Context" },
+            { "type": "text", "text": "Raw log entries are low-level noise. Analyzing single packets does not show the full progression of a breach. Attacks are a story told over time. That is where event_generator.py comes into play." },
+            { "type": "text", "text": "By bucketizing streams into sliding 60-second time windows, our correlation engine flags suspicious multi-packet patterns:" },
+            { "type": "list", "items": [
+              "**Coordinated SSH Activity:** Massive quantities of distinct source IPs knocking on Port 22 simultaneously.",
+              "**Horizontal Port Scanning:** A single actor tracking across dozens of unique destination ports in seconds.",
+              "**Traffic Spikes:** Sudden anomalous deviation in packet volume indicating a potential exfiltration or DDoS vector.",
+              "**High REJECT Counts:** Distributed access denials pointing to scanning footprint probes."
+            ]},
+            { "type": "header2", "text": "The Normalized Security Event Structure" },
+            { "type": "text", "text": "Once correlated, the noise is condensed into clean, high-severity event schemas like this:" },
+            { "type": "code", "language": "json", "code": "{\n  \"event_type\": \"port_scan\",\n  \"severity\": \"high\",\n  \"src_ip\": \"172.31.5.247\",\n  \"window\": 29665856,\n  \"event_time_start\": 1779950520,\n  \"event_time_end\": 1779950580,\n  \"description\": \"Multiple destination ports targeted in rapid succession\"\n}" }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "The AI & Vector Pipeline",
+      "items": [
+        {
+          "id": "vector-db",
+          "title": "ChromaDB & Embeddings",
+          "content": [
+            { "type": "header", "text": "Semantic Security Storage" },
+            { "type": "text", "text": "Why index logs in a vector database? Simple: Traditional SQL queries break when things are misspelled or conceptual." },
+            { "type": "text", "text": "Using SentenceTransformers with the all-MiniLM-L6-v2 blueprint model, text descriptions like \"port_scan high severity multiple ports targeted\" get transformed into high-dimensional vector embeddings." },
+            { "type": "alert", "variant": "warning", "title": "Why this rules", "text": "If a user queries: 'Find instances of remote brute forcing', traditional database lookups return nothing. ChromaDB calculates similarity scores and matches the intent straight to the coordinated_ssh_activity data signature!" },
+            { "type": "header2", "text": "Structured Metadata Filtering" },
+            { "type": "text", "text": "We do not rely solely on fuzziness. The engine implements strict hybrid retrieval combining vector similarity with raw filters like gte unix bounds or specific severity tags:" },
+            { "type": "code", "language": "json", "code": "{\n  \"severity\": \"high\",\n  \"event_time_start\": {\n    \"$gte\": 1779951000\n  }\n}" }
+          ]
+        },
+        {
+          "id": "agentic-retrieval",
+          "title": "Agentic Intelligence Layer",
+          "content": [
+            { "type": "header", "text": "AI-Driven Orchestration Pipeline" },
+            { "type": "text", "text": "Our engine agentic_query.py transforms user intent into formulated database lookups. Driven by an LLM backend orchestrating over the OpenRouter API (GPT-4.1-mini), the system extracts syntax properties seamlessly." },
+            { "type": "header2", "text": "Handling Time Semantics" },
+            { "type": "text", "text": "Thanks to time_parser.py, human queries are automatically mapped down into Unix targets:" },
+            { "type": "list", "items": [
+              "Input: \"What happened between 12:10 and 12:20?\"",
+              "Parsed: { \"start_time\": 1779950400, \"end_time\": 1779951000 }"
+            ]},
+            { "type": "text", "text": "The gathered contexts are then packaged into prompts to build comprehensive incident analysis reports detailing vector impact, severity classification, and active mitigation steps." }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "UI & Takeaways",
+      "items": [
+        {
+          "id": "react-frontend",
+          "title": "Interactive React Dashboard",
+          "content": [
+            { "type": "header", "text": "The Security Analyst Operations Interface" },
+            { "type": "text", "text": "The user interface is built for rapid-fire troubleshooting and investigation transparency." },
+            { "type": "list", "items": [
+              "**Natural Language Input Bar:** Type questions like 'show me critical attacks near 12:30'.",
+              "**AI Analysis Terminal:** Displays live markdown breakdowns of attack paths, compromised asset listings, and remediation procedures.",
+              "**Low-Level Pipeline Visibility:** Exposes full sub-process execution states, standard errors (stderr), exit codes, and operational telemetry loops right inside the console frame for deep debugging accessibility."
+            ]}
+          ]
+        },
+        {
+          "id": "engineering-takeaways",
+          "title": "Core Takeaways & Vision",
+          "content": [
+            { "type": "header", "text": "Why This System Outperforms Basic RAG Templates" },
+            { "type": "text", "text": "Most student AI applications are simple document text QA systems. This implementation handles high-throughput real-time infrastructure telemetry across shifting schemas, turning noisy network logs into structured semantic data maps." },
+            { "type": "alert", "variant": "info", "title": "Core Engineering Concepts Mastered", "text": "Retrieval-Augmented Generation (RAG) * High-Dimensional Text Vectorization * Hybrid Data Lookups * Sliding-Window Log Analysis * Agentic Tool-Calling Workflows" },
+            { "type": "header2", "text": "Future Target Milestones" },
+            { "type": "list", "items": [
+              "Replace file-drops with streaming architectures via Apache Kafka / AWS Kinesis.",
+              "Map security indicators directly to localized MITRE ATT&CK Framework matrices.",
+              "Deploy live notification loops straight to Slack / PagerDuty webhooks upon critical ChromaDB metric deviations."
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}

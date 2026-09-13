@@ -12,7 +12,6 @@ const PROJECTS = [
   { id: 's3-drive', title: 'S3 Drive', description: 'A self-hosted Google Drive alternative built on AWS S3 and Go.', badge: 'core' },
   { id: 'os', title: 'Custom OS', description: 'Custom Linux OS for electric vehicles, built on Arch with a React GUI.', badge: 'core' },
 
-  
   { id: 'aws', title: 'AWS Infrastructure', description: 'Production AWS architectures across EKS, Lambda, MSK, SES, CloudFront, and EC2 — spanning multiple real projects.', badge: 'devops' },
   { id: 'cicd', title: 'CI/CD Pipelines', description: 'GitHub Actions CI/CD pipeline deploying to a self-hosted k3s cluster — build, push to GHCR, and rolling deploy on [prod] commits.', badge: 'devops' },
   { id: 'cloudflare', title: 'Cloudflare Tunnels', description: 'Zero-trust homelab ingress — 12 services across 3 domains, no open ports, automatic TLS, 350ms latency.', badge: 'devops' },

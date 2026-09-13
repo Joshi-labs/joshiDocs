@@ -3,14 +3,15 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { X, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 const ImageModal = ({ src, alt, caption, onClose }) => {
-  if (!src) return null;
-
   // Lock Body Scroll on Mount
   useEffect(() => {
+    if (!src) return;
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = originalStyle; };
-  }, []);
+  }, [src]);
+
+  if (!src) return null;
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200">

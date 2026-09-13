@@ -13,6 +13,7 @@ const DocsViewer = ({ projectId, onImageClick }) => {
 
   // 1. Fetch Data
   useEffect(() => {
+    window.scrollTo(0, 0);
     const loadData = async () => {
       setLoading(true);
       setError(null);

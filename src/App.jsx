@@ -16,9 +16,11 @@ function App() {
   }, []);
 
   // Determine Page
-  // If hash is empty, #, or #/, we are Home. Otherwise, we are viewing a doc.
-  const isHome = !currentHash || currentHash === '#/' || currentHash === '#';
-  const projectId = isHome ? null : currentHash.replace('#/', '');
+  // Doc routes start with '#/' followed by the project id (e.g. '#/ott', '#/vpc_threat_lens').
+  // Empty, '#', '#/', or anchor hashes like '#core', '#aiml' remain on Home.
+  const isDoc = Boolean(currentHash && currentHash.startsWith('#/') && currentHash.length > 2);
+  const isHome = !isDoc;
+  const projectId = isDoc ? currentHash.slice(2).split('?')[0].split('#')[0] : null;
 
   return (
     <>

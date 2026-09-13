@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Github, Linkedin, Mail, ExternalLink, ArrowRight, FileText, Terminal, Cpu } from 'lucide-react';
+import { Github, Linkedin, Mail, ExternalLink, ArrowRight, FileText, Terminal, Cpu, Bot } from 'lucide-react';
 
 // ==========================================
 // 1. PROJECT DATA
@@ -17,6 +17,8 @@ const PROJECTS = [
   { id: 'cloudflare', title: 'Cloudflare Tunnels', description: 'Zero-trust homelab ingress — 12 services across 3 domains, no open ports, automatic TLS, 350ms latency.', badge: 'devops' },
   { id: 'monitoring', title: 'Monitoring Tool / Stack', description: 'Self-hosted Grafana + Prometheus observability stack: monitoring CPU, RAM, power draw, and network with a public dashboard.', badge: 'devops' },
   
+  { id: 'vpc_threat_lens', title: 'ThreatLens', description: 'AI-driven cybersecurity investigation system processing AWS VPC Flow Logs with ChromaDB vector embeddings and LLM orchestration.', badge: 'aiml' },
+
   { id: 'hackathon1', title: 'AI Ticketing System', description: 'A low cost ticketing system that uses multilingual AI to generate tickets and manage them.', badge: 'hackathon' },
   { id: 'hackathon2', title: 'Dark Web Surveillance Tool', description: 'A tool that uses AI to detect and monitor dark web activities. It costs nothing to run.', badge: 'hackathon' },
   { id: 'hackathon3', title: 'Legal AI Assistant', description: 'Fine-tuned chatbot for Dept. of Justice · Built at SIH 2024', badge: 'hackathon' }
@@ -31,7 +33,7 @@ const WhatsappIcon = ({ size = 20, className = "" }) => (
 // ==========================================
 // 2. COMPONENTS
 // ==========================================
-const FadeInSection = ({ children, delay = 0 }) => {
+const FadeInSection = ({ children, delay = 0, className = "" }) => {
   const [isVisible, setVisible] = useState(false);
   const domRef = useRef();
 
@@ -54,7 +56,7 @@ const FadeInSection = ({ children, delay = 0 }) => {
   return (
     <div
       ref={domRef}
-      className={`transition-all duration-500 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      className={`transition-all duration-500 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -67,6 +69,7 @@ const ProjectListItem = ({ project }) => {
     switch(badge) {
       case 'core': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
       case 'devops': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      case 'aiml': return 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
       case 'hackathon': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
       default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
     }
@@ -76,6 +79,7 @@ const ProjectListItem = ({ project }) => {
     switch(badge) {
       case 'core': return <Cpu size={20} />;
       case 'devops': return <Terminal size={20} />;
+      case 'aiml': return <Bot size={20} />;
       default: return <FileText size={20} />;
     }
   };
@@ -116,12 +120,36 @@ const ProjectListItem = ({ project }) => {
   );
 };
 
+const ProjectSection = ({ id, title, projects }) => (
+  <section id={id} className="max-w-5xl mx-auto px-6 py-12">
+    <FadeInSection>
+      <div className="mb-6 border-b border-slate-800 pb-4">
+        <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
+      </div>
+    </FadeInSection>
+    
+    {/* Grid items will automatically stretch to the tallest item in the row */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+      {projects.map((proj, index) => (
+        <FadeInSection key={`${id}-${proj.id}`} delay={(index % 4) * 50} className="h-full">
+           <ProjectListItem project={proj} />
+        </FadeInSection>
+      ))}
+    </div>
+  </section>
+);
+
 // ==========================================
 // 3. MAIN PAGE
 // ==========================================
 const Home = () => {
   const coreProjects = PROJECTS.filter(p => p.badge === 'core');
   const devopsProjects = PROJECTS.filter(p => p.badge === 'devops');
+  const aimlProjects = [
+    PROJECTS.find(p => p.id === 'vpc_threat_lens'),
+    { ...PROJECTS.find(p => p.id === 'hackathon2'), badge: 'aiml' },
+    { ...PROJECTS.find(p => p.id === 'hackathon1'), badge: 'aiml' },
+  ];
   const hackathonProjects = PROJECTS.filter(p => p.badge === 'hackathon');
 
   const scrollToSection = (e, targetId) => {
@@ -133,25 +161,6 @@ const Home = () => {
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
-
-  const ProjectSection = ({ id, title, projects }) => (
-    <section id={id} className="max-w-5xl mx-auto px-6 py-12">
-      <FadeInSection>
-        <div className="mb-6 border-b border-slate-800 pb-4">
-          <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
-        </div>
-      </FadeInSection>
-      
-      {/* Grid items will automatically stretch to the tallest item in the row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-        {projects.map((proj, index) => (
-          <FadeInSection key={proj.id} delay={(index % 4) * 50} className="h-full">
-             <ProjectListItem project={proj} />
-          </FadeInSection>
-        ))}
-      </div>
-    </section>
-  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 flex flex-col">
@@ -189,6 +198,7 @@ const Home = () => {
             <div className="flex flex-wrap justify-center gap-3">
               <a href="#core" onClick={(e) => scrollToSection(e, 'core')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">Core Systems</a>
               <a href="#devops" onClick={(e) => scrollToSection(e, 'devops')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">DevOps</a>
+              <a href="#aiml" onClick={(e) => scrollToSection(e, 'aiml')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">AI & ML</a>
               <a href="#hackathon" onClick={(e) => scrollToSection(e, 'hackathon')} className="px-5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm font-medium text-slate-300 transition-colors">Hackathons</a>
             </div>
           </FadeInSection>
@@ -197,6 +207,7 @@ const Home = () => {
         {/* Project Sections */}
         <ProjectSection id="core" title="Core Engineering" projects={coreProjects} />
         <ProjectSection id="devops" title="DevOps & Infrastructure" projects={devopsProjects} />
+        <ProjectSection id="aiml" title="AI & Machine Learning" projects={aimlProjects} />
         <ProjectSection id="hackathon" title="Hackathons & Prototyping" projects={hackathonProjects} />
       </main>
 
@@ -214,7 +225,7 @@ const Home = () => {
             <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-400 transition-colors" title="LinkedIn">
               <Linkedin size={20} />
             </a>
-            <a href="mailto:hello@vpjoshi.in" className="text-slate-500 hover:text-emerald-400 transition-colors" title="Email">
+            <a href="mailto:contact@vpjoshi.in" className="text-slate-500 hover:text-emerald-400 transition-colors" title="Email">
               <Mail size={20} />
             </a>
             <a href="https://wa.me/yourphonenumber" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-green-500 transition-colors" title="WhatsApp">
